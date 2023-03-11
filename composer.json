@@ -1,0 +1,22 @@
+{
+    "name": "byjg/jinja_php",
+    "description": "Jinja for PHP",
+    "type": "library",
+    "require": {},
+    "require-dev": {
+        "phpunit/phpunit": "5.7.*|7.4.*|^9.5"
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "ByJG\\JinjaPhp\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Joao Gilberto Magalhaes",
+            "email": "joao@byjg.com.br"
+        }
+    ],
+    "minimum-stability": "dev"
+}
