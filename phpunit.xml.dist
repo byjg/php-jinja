@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+
+<!-- see http://www.phpunit.de/wiki/Documentation -->
+<phpunit bootstrap="./vendor/autoload.php"
+         colors="true"
+         testdox="true"
+         convertErrorsToExceptions="true"
+         convertNoticesToExceptions="true"
+         convertWarningsToExceptions="true"
+         convertDeprecationsToExceptions="true"
+         stopOnFailure="false">
+
+    <php>
+        <ini name="display_errors" value="On" />
+        <ini name="display_startup_errors" value="On" />
+        <ini name="error_reporting" value="E_ALL" />
+    </php>
+
+    <filter>
+        <whitelist>
+            <directory>./src</directory>
+        </whitelist>
+    </filter>
+    
+    <testsuites>
+        <testsuite name="Test Suite">
+            <directory>./tests/</directory>
+        </testsuite>
+    </testsuites>
+    
+</phpunit>

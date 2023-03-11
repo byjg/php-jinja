@@ -2,7 +2,8 @@
 
 namespace ByJG\JinjaPhp;
 
-use ByJG\JinjaPhp\Undefined\DebugUndefined;
+use ByJG\JinjaPhp\Undefined\DefaultUndefined;
+use ByJG\JinjaPhp\Undefined\StrictUndefined;
 
 class Template
 {
@@ -14,7 +15,7 @@ class Template
     public function __construct($template)
     {
         $this->template = $template;
-        $this->undefined = new DebugUndefined();
+        $this->undefined = new StrictUndefined();
     }
 
     public function withUndefined($undefined)
@@ -40,16 +41,19 @@ class Template
         );
     }
 
-    protected function getVar($varName, $variables) {
+    protected function getVar($varName, $variables, $undefined = null) {
         $varAr = explode('.', trim($varName));
         $varName = $varAr[0];
         if (isset($variables[$varName])) {
             if (count($varAr) > 1) {
-                return $this->getVar(implode(".", array_slice($varAr, 1)), $variables[$varName]);
+                return $this->getVar(implode(".", array_slice($varAr, 1)), $variables[$varName], $undefined);
             }
             return $variables[$varName];
         } else {
-            return $this->undefined->render($varName);
+            if (is_null($undefined)) {
+                $undefined = $this->undefined;
+            }
+            return $undefined->render($varName);
         }
     }
     
@@ -58,8 +62,14 @@ class Template
         preg_match($regex, $filterCommand, $matches);
         $filterName = $matches[1];
         // Split the parameters by comma, but not if it is inside quotes
-        if (isset($matches[2])) {
-            $filterParams = preg_split('/,(?=(?:[^"\']*[\'"][^\'"]*\'")*[^\'"]*$)/', $matches[2]);
+        if (isset($matches[3])) {
+            // get filter parameters without parenthesis and delimited by , (comma) not (inside quotes or single quotes)
+            // $filterParams = preg_split('/(?<=[^\'"]),(?=[^\'"])/', $matches[3]);
+            if (preg_match_all("~'[^']++'|\([^)]++\)|[^,]++~", $matches[3], $filterParams)) {
+                $filterParams = $filterParams[0];
+            } else {
+                $filterParams = [];
+            }
         } else {
             $filterParams = [];
         }
@@ -67,9 +77,21 @@ class Template
     }
     
     protected function applyFilter($values, $variables) {
-        $content = $this->evaluateVariable(array_shift($values), $variables);
+        $content = trim(array_shift($values));
+        $firstTime = true;
         do {
             $filterCommand = $this->extractFilterValues(array_shift($values));
+            if ($firstTime) {
+                $firstTime = false;
+                if ($filterCommand[0] == "default") {
+                    $default = isset($filterCommand[1][0]) ? $this->evaluateVariable($filterCommand[1][0], $variables) : "";
+                    $content = $this->evaluateVariable($content, $variables, new DefaultUndefined($default));
+                    continue;
+                } else {
+                    $content = $this->evaluateVariable($content, $variables);
+                }
+            }
+
             switch ($filterCommand[0]) {
                 case "upper":
                     $content = strtoupper($content);
@@ -78,27 +100,33 @@ class Template
                     $content = strtolower($content);
                     break;
                 case "join":
-                    $content = implode($this->evaluateVariable($filterCommand[1][0], $variables), (array)$content);
+                    $delimiter = isset($filterCommand[1][0]) ? $this->evaluateVariable($filterCommand[1][0], $variables) : "";
+                    $content = implode($delimiter, (array)$content);
+                    break;
+                case "replace":
+                    $search = isset($filterCommand[1][0]) ? $this->evaluateVariable($filterCommand[1][0], $variables) : "";
+                    $replace = isset($filterCommand[1][1]) ? $this->evaluateVariable($filterCommand[1][1], $variables) : "";
+                    $content = str_replace($search, $replace, $content);
                     break;
             }
         } while (count($values) > 0);
         return $content;
     }
     
-    protected function evaluateVariable($content, $variables) {
+    protected function evaluateVariable($content, $variables, $undefined = null) {
         if (strpos($content, ' | ') !== false) {
             return $this->applyFilter(explode(" | ", $content), $variables);
         } else if (strpos($content, ' ~ ') !== false) {
             $content = "{{ " . str_replace(' ~ ', '}}{{', $content) . " }}";
             return $this->parseVariables($content, $variables);
-        } else if (preg_match('/["\'\+\-\*\/\]\[]/', $content)) {
+        } else if (preg_match('/["\'\+\-\*\/\]\[%]/', $content) || is_numeric(trim($content)) || trim($content) == "true" || trim($content) == "false") {
             $valueToEvaluate = $content;
         } else {
-            $var = $this->getVar($content, $variables);
+            $var = $this->getVar($content, $variables, $undefined);
             if (is_array($var)) {
                 return $var;
             }
-            $valueToEvaluate = "'" . $this->getVar($content, $variables) . "'";
+            $valueToEvaluate = "'" . $this->getVar($content, $variables, $undefined) . "'";
         }
     
         $evalResult = "";
@@ -106,7 +134,7 @@ class Template
         return $evalResult;
     }
     
-    protected function parseIf($texto, $variables = [])
+    protected function parseIf($partialTemplate, $variables = [])
     {
         // Find {%if%} and {%endif%} and replace the content between them
         $regex = '/\{%\s*if(.*)\%}(.*)\{%\s*endif\s*\%}/sU';
@@ -120,7 +148,7 @@ class Template
                 return $matches[2];
             };
             return "";
-        }, $texto);
+        }, $partialTemplate);
         return $result;
     }
     
@@ -145,13 +173,13 @@ class Template
     }
     
     
-    protected function parseVariables($texto, $variables) {
+    protected function parseVariables($partialTemplate, $variables) {
         // Find {{}} and replace the content between them
         $regex = '/\{\{(.*)\}\}/U';
         $result = preg_replace_callback($regex, function ($matches) use ($variables) {
             // if contains any math operation, evaluate it
             return $this->evaluateVariable($matches[1], $variables);
-        }, $texto);
+        }, $partialTemplate);
         return $result;
     }
 
