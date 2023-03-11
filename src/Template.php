@@ -3,7 +3,6 @@
 namespace ByJG\JinjaPhp;
 
 use ByJG\JinjaPhp\Undefined\DebugUndefined;
-use ByJG\JinjaPhp\Undefined\EmptyUndefined;
 
 class Template
 {
@@ -35,7 +34,7 @@ class Template
         $variables = $this->variables + $variables;
         return $this->parseVariables(
             $this->parseIf(
-                $this->parseFor($template, $variables),
+                $this->parseFor($variables),
                 $variables),
             $variables
         );
@@ -102,6 +101,7 @@ class Template
             $valueToEvaluate = "'" . $this->getVar($content, $variables) . "'";
         }
     
+        $evalResult = "";
         eval("\$evalResult = $valueToEvaluate;");
         return $evalResult;
     }
@@ -124,7 +124,7 @@ class Template
         return $result;
     }
     
-    protected function parseFor($texto, $variables)
+    protected function parseFor($variables)
     {
         // Find {%for%} and {%endfor%} and replace the content between them
         $regex = '/\{%\s*for(.*)\s*\%}(.*)\{%\s*endfor\s*\%}/sU';
@@ -140,7 +140,7 @@ class Template
             }
     
             return $content;
-        }, $texto);
+        }, $this->template);
         return $result;
     }
     
