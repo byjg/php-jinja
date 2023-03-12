@@ -171,9 +171,13 @@ class Template
         $regex = '/\{%\s*if(.*)\%}(.*)\{%\s*endif\s*\%}/sU';
         $result = preg_replace_callback($regex, function ($matches) use ($variables) {
             $condition = trim($matches[1]);
+            $ifContent = $matches[2];
+            $ifParts = preg_split('/\{%\s*else\s*\%}/', $ifContent);
             if ($this->evaluateVariable($condition, $variables)) {
-                return $matches[2];
-            };
+                return $ifParts[0];
+            } else if (isset($ifParts[1])) {
+                return $ifParts[1];
+            }
             return "";
         }, $partialTemplate);
         return $result;

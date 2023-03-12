@@ -29,12 +29,14 @@ class TemplateIfTest extends TestCase
         $template = new \ByJG\JinjaPhp\Template("{% if var1 == 'test' %}true{% endif %}");
         $this->assertEquals("true", $template->render(['var1' => 'test']));
 
-        // TODO: Fix this
-        // $template = new \ByJG\JinjaPhp\Template("{% if true %}true{% else %}false{% endif %}");
-        // $this->assertEquals("true", $template->render());
+        $template = new \ByJG\JinjaPhp\Template("{% if true %}true{% else %}false{% endif %}");
+        $this->assertEquals("true", $template->render());
 
-        // $template = new \ByJG\JinjaPhp\Template("{% if false %}true{% else %}false{% endif %}");
-        // $this->assertEquals("false", $template->render());
+        $template = new \ByJG\JinjaPhp\Template("{% if false %}true{% else %}false{% endif %}");
+        $this->assertEquals("false", $template->render());
+
+        $template = new \ByJG\JinjaPhp\Template("{% if var1 == 'test' %}true{%else%}false{% endif %}");
+        $this->assertEquals("false", $template->render(['var1' => 'notest']));
 
         // $template = new \ByJG\JinjaPhp\Template("{% if true %}true{% elseif true %}false{% endif %}");
         // $this->assertEquals("true", $template->render());
