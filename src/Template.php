@@ -143,10 +143,16 @@ class Template
         // match content with the array representation
         } else if (preg_match('/^\[.*\]$/', trim($content))) {
             $array = preg_split('/\s*,\s*/', trim($content, "[]"));
+            $retArray = [];
             for ($i = 0; $i < count($array); $i++) {
-                $array[$i] = $this->evaluateVariable($array[$i], $variables);
+                $arData = preg_split('/\s*:\s*/', $array[$i]);
+                if (count($arData) == 2) {
+                    $retArray[trim($arData[0], "\"'")] = $this->evaluateVariable($arData[1], $variables);
+                } else {
+                    $retArray[$i] = $this->evaluateVariable($array[$i], $variables);
+                }
             }
-            return $array;
+            return $retArray;
         } else if (preg_match('/(<=|>=|==|!=|<>|\*\*|&&|\|\||[\+\-\/\*\%\<\>])/', $content) ) {
             $array = preg_split('/(<=|>=|==|!=|<>|\*\*|&&|\|\||[\+\-\/\*\%\<\>])/', $content, -1, PREG_SPLIT_DELIM_CAPTURE);
             for ($i = 0; $i < count($array); $i=$i+2) {
@@ -203,11 +209,32 @@ class Template
         $result = preg_replace_callback($regex, function ($matches) use ($variables) {
     
             $content = "";
-            $regexFor = '/\s*([\w\d_-]+)\s+in\s+(.*)\s*/';
-            if (preg_match($regexFor, $matches[1], $matchesFor)) {
-                $array = $this->evaluateVariable($matchesFor[2], $variables);
+            $regexFor = '/\s*(?<key1>[\w\d_-]+)(\s*,\s*(?<key2>[\w\d_-]+))?\s+in\s+(?<array>.*)\s*/';
+            $forExpression = trim($matches[1]);
+            if (preg_match($regexFor, $forExpression, $matchesFor)) {
+                $array = $this->evaluateVariable($matchesFor["array"], $variables);
+                if (!empty($matchesFor["key2"])) {
+                    $forKey = $matchesFor["key1"];
+                    $forValue = $matchesFor["key2"];
+                } else {
+                    $forKey = "__index";
+                    $forValue = $matchesFor["key1"];
+                }
+                $index = 0;
+                $loop = [];
                 foreach ($array as $key => $value) {
-                    $content .= $this->parseVariables($matches[2], $variables + [trim($matchesFor[1]) => $value]);
+                    $loop["first"] = $index == 0;
+                    $loop["last"] = $index == count($array) - 1;
+                    $loop["index"] = $index + 1;
+                    $loop["index0"] = $index;
+                    $loop["revindex"] = count($array) - $index;
+                    $loop["revindex0"] = count($array) - $index - 1;
+                    $loop["length"] = count($array);
+                    $loop["even"] = $index % 2 == 0;
+                    $loop["odd"] = $index % 2 == 1;
+                    
+                    $content .= $this->parseVariables($matches[2], $variables + [$forKey => $key, $forValue => $value] + ["loop" => $loop]);
+                    $index++;
                 }
             }
     
