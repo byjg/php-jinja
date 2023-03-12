@@ -26,6 +26,9 @@ class TemplateExpressionTest extends TestCase
         $template = new \ByJG\JinjaPhp\Template("{{ 2 ** 3 }}");
         $this->assertEquals("8", $template->render());
 
+        $template = new \ByJG\JinjaPhp\Template("{{ var1 + 1 }}");
+        $this->assertEquals("5", $template->render(['var1' => 4]));
+
         $template = new \ByJG\JinjaPhp\Template("{{ (2 + 3) ** 2 }}");
         $this->assertEquals("25", $template->render());
     }

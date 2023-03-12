@@ -116,11 +116,42 @@ class Template
     protected function evaluateVariable($content, $variables, $undefined = null) {
         if (strpos($content, ' | ') !== false) {
             return $this->applyFilter(explode(" | ", $content), $variables);
-        } else if (strpos($content, ' ~ ') !== false) {
-            $content = "{{ " . str_replace(' ~ ', '}}{{', $content) . " }}";
-            return $this->parseVariables($content, $variables);
-        } else if (preg_match('/["\'\+\-\*\/\]\[%]/', $content) || is_numeric(trim($content)) || trim($content) == "true" || trim($content) == "false") {
+        // } else if (strpos($content, ' is ') !== false) {
+        //     $content = "{{ " . str_replace(' is ', '}}{{', $content) . " }}";
+        //     return $this->parseVariables($content, $variables);
+        // } else if (strpos($content, ' in ') !== false) {
+        //     $content = "{{ " . str_replace(' in ', '}}{{', $content) . " }}";
+        //     return $this->parseVariables($content, $variables);       
+        } else if (preg_match('/\s*~\s*/', $content) ) {
+            $array = preg_split('/\s*~\s*/', $content);
+            for ($i = 0; $i < count($array); $i++) {
+                $array[$i] = $this->evaluateVariable($array[$i], $variables);
+            }
+            return implode("", $array);
+        } else if (preg_match('/^["\'].*["\']$/', trim($content)) || is_numeric(trim($content)) || trim($content) == "true" || trim($content) == "false") {
             $valueToEvaluate = $content;
+        // parse variables inside parenthesis
+        } else if (preg_match('/\((.*)\)/', $content, $matches)) {
+            $content = preg_replace_callback('/\((.*)\)/', function($matches) use (&$valueToEvaluate, $variables) {
+                return $this->evaluateVariable($matches[1], $variables);
+            }, $content);
+            $valueToEvaluate = $this->evaluateVariable($content, $variables);
+        // match content with the array representation
+        } else if (preg_match('/^\[.*\]$/', trim($content))) {
+            $array = preg_split('/\s*,\s*/', trim($content, "[]"));
+            for ($i = 0; $i < count($array); $i++) {
+                $array[$i] = $this->evaluateVariable($array[$i], $variables);
+            }
+            return $array;
+        } else if (preg_match('/(<=|>=|==|!=|<>|\*\*|&&\|\||[\+\-\/\*\%\<\>])/', $content) ) {
+            $array = preg_split('/(<=|>=|==|!=|<>|\*\*|&&\|\||[\+\-\/\*\%\<\>])/', $content, -1, PREG_SPLIT_DELIM_CAPTURE);
+            for ($i = 0; $i < count($array); $i=$i+2) {
+                $array[$i] = $this->evaluateVariable($array[$i], $variables);
+                if (is_string($array[$i])) {
+                    $array[$i] = "'" . $array[$i] . "'";
+                }
+            }
+            $valueToEvaluate = implode("", $array);
         } else {
             $var = $this->getVar($content, $variables, $undefined);
             if (is_array($var)) {
@@ -140,10 +171,6 @@ class Template
         $regex = '/\{%\s*if(.*)\%}(.*)\{%\s*endif\s*\%}/sU';
         $result = preg_replace_callback($regex, function ($matches) use ($variables) {
             $condition = trim($matches[1]);
-            $regexCond = '/([^"\'\w\d])([\w_-]+)[^"\'\w\d]/';
-            $condition = preg_replace_callback($regexCond, function ($matches) use ($variables) {
-                return $matches[1] . "\"" . $variables[trim($matches[2])] . "\"";
-            }, $condition);
             if ($this->evaluateVariable($condition, $variables)) {
                 return $matches[2];
             };

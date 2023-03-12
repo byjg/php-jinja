@@ -44,6 +44,9 @@ class TemplateFilterTest extends TestCase
         $template = new \ByJG\JinjaPhp\Template("{{ [1, 2, 3] | join(', ') }}");
         $this->assertEquals("1, 2, 3", $template->render());
 
+        $template = new \ByJG\JinjaPhp\Template("{{ [1, 2*5, var1 ] | join(', ') }}");
+        $this->assertEquals("1, 10, 3", $template->render(['var1' => 3]));
+
         $template = new \ByJG\JinjaPhp\Template("{{ var1 | join(', ') }}");
         $this->assertEquals("1, 2, 3", $template->render(['var1' => [1, 2, 3]]));
 
