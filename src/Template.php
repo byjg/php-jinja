@@ -108,6 +108,10 @@ class Template
                     $replace = isset($filterCommand[1][1]) ? $this->evaluateVariable($filterCommand[1][1], $variables) : "";
                     $content = str_replace($search, $replace, $content);
                     break;
+                case "split":
+                    $delimiter = isset($filterCommand[1][0]) ? $this->evaluateVariable($filterCommand[1][0], $variables) : "";
+                    $content = explode($delimiter, $content);
+                    break;
             }
         } while (count($values) > 0);
         return $content;
@@ -199,7 +203,7 @@ class Template
         $result = preg_replace_callback($regex, function ($matches) use ($variables) {
     
             $content = "";
-            $regexFor = '/\s*([\w\d_-]+)\s+in\s+([\w\d_-]+)\s*/';
+            $regexFor = '/\s*([\w\d_-]+)\s+in\s+(.*)\s*/';
             if (preg_match($regexFor, $matches[1], $matchesFor)) {
                 $array = $this->evaluateVariable($matchesFor[2], $variables);
                 foreach ($array as $key => $value) {
