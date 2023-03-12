@@ -48,5 +48,92 @@ class TemplateForTest extends TestCase
         $this->assertEquals("val1val3val4val2val3val4val5val7val8val6val7val8", $template->render(['array' => ['val1', 'val2'], 'array2' => ['val3', 'val4'], 'array3' => ['val5', 'val6'], 'array4' => ['val7', 'val8']]));
     }
 
+    public function testForMultiline()
+    {
+        $templateString = <<<MSG_EOF
+===
+{% for item in array %}
+{{ item }}
+{% endfor %}
+---
+MSG_EOF;
+
+        $expected = <<<MSG_EOF
+===
+
+val1
+
+val2
+
+---
+MSG_EOF;
+
+        $template = new \ByJG\JinjaPhp\Template($templateString);
+        $this->assertEquals($expected, $template->render(['array' => ['val1', 'val2']]));
+    }
+
+    public function testForMultilineRightSpace()
+    {
+        $templateString = <<<MSG_EOF
+===
+{% for item in array -%}
+{{ item }}
+{% endfor %}
+---
+MSG_EOF;
+
+        $expected = <<<MSG_EOF
+===
+
+val1
+val2
+---
+MSG_EOF;
+
+        $template = new \ByJG\JinjaPhp\Template($templateString);
+        $this->assertEquals($expected, $template->render(['array' => ['val1', 'val2']]));
+    }
+
+    public function testForMultilineLeftSpace()
+    {
+        $templateString = <<<MSG_EOF
+===
+{%- for item in array %}
+{{ item }}
+{% endfor %}
+---
+MSG_EOF;
+
+        $expected = <<<MSG_EOF
+===
+val1
+val2
+
+---
+MSG_EOF;
+
+        $template = new \ByJG\JinjaPhp\Template($templateString);
+        $this->assertEquals($expected, $template->render(['array' => ['val1', 'val2']]));
+    }
+
+    public function testForMultilineBothSpaces()
+    {
+        $templateString = <<<MSG_EOF
+===
+{%- for item in array -%}
+{{ item }}
+{% endfor %}
+---
+MSG_EOF;
+
+        $expected = <<<MSG_EOF
+===
+val1val2
+---
+MSG_EOF;
+
+        $template = new \ByJG\JinjaPhp\Template($templateString);
+        $this->assertEquals($expected, $template->render(['array' => ['val1', 'val2']]));
+    }
 
 }

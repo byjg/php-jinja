@@ -104,4 +104,89 @@ class TemplateIfTest extends TestCase
         $template = new \ByJG\JinjaPhp\Template("{% if true %}{% if true %}true1{% endif %}{% endif %}{% if true %}here{% if false %}true2{% endif %}{% endif %}{% if true %}{% if true %}true1{% endif %}{% endif %}{% if true %}here{% if false %}true2{% endif %}{% endif %}");
         $this->assertEquals("true1heretrue1here", $template->render());
     }
+
+    public function testIfMultipleLines()
+    {
+        $templateString = <<<EOT
+=====
+{% if true %}
+true
+{% endif %}
+-----
+EOT;
+
+$expected = <<<EOT
+=====
+
+true
+
+-----
+EOT;
+
+        $template = new \ByJG\JinjaPhp\Template($templateString);
+        $this->assertEquals($expected, $template->render());
+    }
+
+    public function testIfMultipleLinesTrimRightSpace()
+    {
+        $templateString = <<<EOT
+=====
+{% if true -%}
+true
+{% endif %}
+-----
+EOT;
+
+$expected = <<<EOT
+=====
+
+true
+-----
+EOT;
+
+        $template = new \ByJG\JinjaPhp\Template($templateString);
+        $this->assertEquals($expected, $template->render());
+    }
+
+    public function testIfMultipleLinesTrimleftSpace()
+    {
+        $templateString = <<<EOT
+=====
+{%- if true %}
+true
+{% endif %}
+-----
+EOT;
+
+$expected = <<<EOT
+=====
+true
+
+-----
+EOT;
+
+        $template = new \ByJG\JinjaPhp\Template($templateString);
+        $this->assertEquals($expected, $template->render());
+    }
+
+    public function testIfMultipleLinesTrimBothSpace()
+    {
+        $templateString = <<<EOT
+=====
+{%- if true -%}
+true
+{% endif %}
+-----
+EOT;
+
+$expected = <<<EOT
+=====
+true
+-----
+EOT;
+
+        $template = new \ByJG\JinjaPhp\Template($templateString);
+        $this->assertEquals($expected, $template->render());
+    }
+
 }

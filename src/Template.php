@@ -187,7 +187,7 @@ class Template
     protected function prepareDocumentToParse($partialTemplate, $startTag, $endTag)
     {
         // count the number of {% $startTag %} and {% $endTag %} tags using regex
-        $regex = '/\{%\s*' . $startTag . '(.*)\%}/sU';
+        $regex = '/\{%[+-]?\s*' . $startTag . '(.*)\%}/sU';
         preg_match_all($regex, $partialTemplate, $matches);
         $startTagCount = count($matches[0]);
         $regex = '/\{%\s*' . $endTag . '\s*\%}/sU';
@@ -211,18 +211,21 @@ class Template
             while (!empty($iEndTag)) {
                 $i = array_pop($iEndTag);
 
-                $iPosStartTag = strpos($result, '{% ' . $startTag . str_pad($i, 2, "0", STR_PAD_LEFT) . " ");
-                $iPosStartTagAfter = preg_match('/\{%\s*' . $startTag . ' /sU', $result, $matchesTmpStartTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
-                $iPosEndTag = preg_match('/\{%\s*' .  $endTag . '\s*\%}/sU', $result, $matchesTmpEndTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
+                $iPosStartTag = strpos($result, ' ' . $startTag . str_pad($i, 2, "0", STR_PAD_LEFT) . " ");
+                $iPosStartTagAfter = preg_match('/\{%[+-]?\s*' . $startTag . ' /sU', $result, $matchesTmpStartTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
+                $iPosEndTag = preg_match('/\{%[+-]?\s*' .  $endTag . '\s*[+-]?\%}/sU', $result, $matchesTmpEndTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
             
                 if (($iPosStartTagAfter && $iPosEndTag) && $matchesTmpStartTag[0][1] < $matchesTmpEndTag[0][1]) {
                     array_push($iEndTag, $i);
                     break;
                 }
 
-                $regex = '/\{%\s*' .  $endTag . '\s*\%}/sU';
+                $regex = '/\{%(?<left>[+-])?\s*' .  $endTag . '\s*(?<right>[+-])?\%}/sU';
                 $result = preg_replace_callback($regex, function ($matches) use ($i, $endTag) {
-                    return '{% ' .  $endTag . str_pad($i, 2, "0", STR_PAD_LEFT) . " %}";
+                    $left = isset($matches['left']) ? $matches['left'] : '';
+                    $right = isset($matches['right']) ? $matches['right'] : '';
+
+                    return "{%$left " .  $endTag . str_pad($i, 2, "0", STR_PAD_LEFT) . " $right%}";
                 }, $result, 1);
             }
 
@@ -230,19 +233,24 @@ class Template
         };
 
         while ($iStartTag < $startTagCount) {
-            $regex = '/\{%\s*' . $startTag . ' /sU';
+            $regex = '/\{%(?<left>[+-])?\s*' . $startTag . ' /sU';
             $iStartTag++;
             $result = preg_replace_callback($regex, function ($matches) use ($iStartTag, $startTag) {
-                return '{% ' . $startTag . str_pad($iStartTag, 2, "0", STR_PAD_LEFT) . " ";
+                $left = isset($matches['left']) ? $matches['left'] : '';
+
+                return "{%$left " . $startTag . str_pad($iStartTag, 2, "0", STR_PAD_LEFT) . " ";
             }, $result, 1);
 
-            $iPosStartTag = strpos($result, '{% ' . $startTag . str_pad($iStartTag, 2, "0", STR_PAD_LEFT) . " ");
-            $iPosStartTagAfter = preg_match('/\{%\s*' . $startTag . ' /sU', $result, $matchesTmpStartTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
-            $iPosEndTag = preg_match('/\{%\s*' .  $endTag . '\s*\%}/sU', $result, $matchesTmpEndTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
+            $iPosStartTag = strpos($result, ' ' . $startTag . str_pad($iStartTag, 2, "0", STR_PAD_LEFT) . " ");
+            $iPosStartTagAfter = preg_match('/\{%[+-]?\s*' . $startTag . ' /sU', $result, $matchesTmpStartTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
+            $iPosEndTag = preg_match('/\{%[+-]?\s*' .  $endTag . '\s*[+-]?\%}/sU', $result, $matchesTmpEndTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
 
             if ($iPosStartTagAfter && $iPosEndTag && $matchesTmpEndTag[0][1] < $matchesTmpStartTag[0][1]) {
-                $result = preg_replace_callback('/\{%\s*' .  $endTag . '\s*\%}/sU', function ($matches) use ($iStartTag, $endTag) {
-                    return '{% ' .  $endTag . str_pad($iStartTag, 2, "0", STR_PAD_LEFT) . " %}";
+                $result = preg_replace_callback('/\{%(?<left>[+-])?\s*' .  $endTag . '\s*(?<right>[+-])?\%}/sU', function ($matches) use ($iStartTag, $endTag) {
+                    $left = isset($matches['left']) ? $matches['left'] : '';
+                    $right = isset($matches['right']) ? $matches['right'] : '';
+
+                    return "{%$left " .  $endTag . str_pad($iStartTag, 2, "0", STR_PAD_LEFT) . " $right%}";
                 }, $result, 1);
 
                 list($iEndTag, $result) = $fixArray($iEndTag, $endTag, $result);
@@ -264,17 +272,27 @@ class Template
         for ($i=1; $i <= $ifCount; $i++) {
             $position = str_pad($i, 2, "0", STR_PAD_LEFT);
 
-            $regex = '/\{%\s*if' . $position . '(.*)\%}(.*)\{%\s*endif' . $position . '\s*\%}/sU';
+            $regex = '/\{%([+-])?\s*if' . $position . '(.*)([+-])?\%}(.*)\{%\s*endif' . $position . '\s*\%}/sU';
             $result = preg_replace_callback($regex, function ($matches) use ($variables) {
-                $condition = trim($matches[1]);
-                $ifContent = $matches[2];
+                $leftWhiteSpace = trim($matches[1]);
+                $condition = trim($matches[2]);
+                $rightWhiteSpace = trim($matches[3]);
+                $ifContent = $matches[4];
                 $ifParts = preg_split('/\{%\s*else\s*\%}/', $ifContent);
+                $return = "";
                 if ($this->evaluateVariable($condition, $variables)) {
-                    return $ifParts[0];
+                    $return = $ifParts[0];
                 } else if (isset($ifParts[1])) {
-                    return $ifParts[1];
+                    $return = $ifParts[1];
                 }
-                return "";
+
+                if ($leftWhiteSpace == "-") {
+                    $return = ltrim($return);
+                }
+                if ($rightWhiteSpace == "-") {
+                    $return = rtrim($return);
+                }
+                return $return;
             }, $result);
         }
         return $result;
@@ -295,12 +313,14 @@ class Template
         for ($i=$forStart; $i <= $forCount; $i++) {
             $position = str_pad($i, 2, "0", STR_PAD_LEFT);
 
-            $regex = '/\{%\s*for' . $position . '(.*)\s*\%}(.*)\{%\s*endfor' . $position . '\s*\%}/sU';
+            $regex = '/\{%([-+])?\s*for' . $position . '(.*)\s*([-+])?\%}(.*)\{%\s*endfor' . $position . '\s*\%}/sU';
             $result = preg_replace_callback($regex, function ($matches) use ($variables) {
         
                 $content = "";
                 $regexFor = '/\s*(?<key1>[\w\d_-]+)(\s*,\s*(?<key2>[\w\d_-]+))?\s+in\s+(?<array>.*)\s*/';
-                $forExpression = trim($matches[1]);
+                $leftWhiteSpace = trim($matches[1]);
+                $forExpression = trim($matches[2]);
+                $rightWhiteSpace = trim($matches[3]);
                 if (preg_match($regexFor, $forExpression, $matchesFor)) {
                     $array = $this->evaluateVariable($matchesFor["array"], $variables);
                     if (!empty($matchesFor["key2"])) {
@@ -330,15 +350,22 @@ class Template
 
                         // Find {% for00 %} and get the array with 00 pattern
                         $regexNestedFor = '/\{%\s*for(\d{2}).*\%}/sU';
-                        if (preg_match_all($regexNestedFor, $matches[2], $matchesNestedFor)) {
+                        if (preg_match_all($regexNestedFor, $matches[4], $matchesNestedFor)) {
                             foreach ($matchesNestedFor[1] as $matchNested) {
                                 $matchNested = intval($matchNested);
-                                $matches[2] = $this->parseFor($variables + $loopControl, $matchNested, $matchNested, $matches[2]);
+                                $matches[4] = $this->parseFor($variables + $loopControl, $matchNested, $matchNested, $matches[4]);
                             }
                         }
                         
+                        $resultContent = $this->parseVariables($matches[4], $variables + $loopControl + ["loop" => $loop]);
+                        if ($leftWhiteSpace == "-") {
+                            $resultContent = ltrim($resultContent);
+                        }
+                        if ($rightWhiteSpace == "-") {
+                            $resultContent = rtrim($resultContent);
+                        }
+                        $content .= $resultContent;
                         
-                        $content .= $this->parseVariables($matches[2], $variables + $loopControl + ["loop" => $loop]);
                         $index++;
                     }
                 }
