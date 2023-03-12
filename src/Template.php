@@ -112,6 +112,16 @@ class Template
                     $delimiter = isset($filterCommand[1][0]) ? $this->evaluateVariable($filterCommand[1][0], $variables) : "";
                     $content = explode($delimiter, $content);
                     break;
+                case "trim":
+                    $chars = isset($filterCommand[1][0]) ? $this->evaluateVariable($filterCommand[1][0], $variables) : null;
+                    $content = is_null($chars) ? trim($content) : trim($content, $chars);
+                    break;
+                case "length":
+                    $content = is_array($content) ? count($content) : strlen($content);
+                    break;
+                case "capitalize":
+                    $content = ucwords($content);
+                    break;
             }
         } while (count($values) > 0);
         return $content;

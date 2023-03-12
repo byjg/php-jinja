@@ -136,4 +136,34 @@ MSG_EOF;
         $this->assertEquals($expected, $template->render(['array' => ['val1', 'val2']]));
     }
 
+//     public function testForElse()
+//     {
+//         $templateString = <<<MSG_EOF
+// ===
+// {% for item in array %}
+// {{ item }}
+// {% else %}
+// No items
+// {% endfor %}
+// ---
+// MSG_EOF;
+
+//         $expected = <<<MSG_EOF
+// ===
+// val1
+// val2
+// ---
+// MSG_EOF;
+
+//         $template = new \ByJG\JinjaPhp\Template($templateString);
+//         $this->assertEquals($expected, $template->render(['array' => ['val1', 'val2']]));
+
+//         $expected = <<<MSG_EOF
+// ===
+// No items
+// ---
+// MSG_EOF;
+
+//         $this->assertEquals($expected, $template->render(['array' => []]));
+//     }
 }
