@@ -34,7 +34,19 @@ class TemplateForTest extends TestCase
 
         $template = new \ByJG\JinjaPhp\Template("{% for key, value in ['a', 'b', 'c'] %}Item {{ loop.index }} of {{ loop.length }}:{{ value }} {% endfor %}");
         $this->assertEquals("Item 1 of 3:a Item 2 of 3:b Item 3 of 3:c ", $template->render());
-
-
     }
+
+    public function testNestedFor()
+    {
+        $template = new \ByJG\JinjaPhp\Template("{% for xyz in array %}{{ xyz }}{% for item in array2 %}{{ item }}{% endfor %}{% endfor %}");
+        $this->assertEquals("val1val3val4val2val3val4", $template->render(['array' => ['val1', 'val2'], 'array2' => ['val3', 'val4']]));
+
+        $template = new \ByJG\JinjaPhp\Template("{% for xyz in array %}{% for item in array3 %}{{ item }}{% endfor %}{{ xyz }}{% for item in array2 %}{{ item }}{% endfor %}{% endfor %}");
+        $this->assertEquals("val5val6val1val3val4val5val6val2val3val4", $template->render(['array' => ['val1', 'val2'], 'array2' => ['val3', 'val4'], 'array3' => ['val5', 'val6']]));
+
+        $template = new \ByJG\JinjaPhp\Template("{% for xyz in array %}{{ xyz }}{% for item in array2 %}{{ item }}{% endfor %}{% endfor %}{% for xyz in array3 %}{{ xyz }}{% for item in array4 %}{{ item }}{% endfor %}{% endfor %}");
+        $this->assertEquals("val1val3val4val2val3val4val5val7val8val6val7val8", $template->render(['array' => ['val1', 'val2'], 'array2' => ['val3', 'val4'], 'array3' => ['val5', 'val6'], 'array4' => ['val7', 'val8']]));
+    }
+
+
 }

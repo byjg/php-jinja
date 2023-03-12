@@ -207,17 +207,24 @@ class Template
         $result = $partialTemplate;
 
         // Close the closest {% $endTag %} tags before opening a new {% $startTag %} tag
-        $fixArray = function ($iEndTag, $endTag, $result) {
-            $iEndTag = array_reverse($iEndTag);
+        $fixArray = function ($iEndTag, $endTag, $result) use ($startTag) {
+            while (!empty($iEndTag)) {
+                $i = array_pop($iEndTag);
 
-            foreach ($iEndTag as $i) {
+                $iPosStartTag = strpos($result, '{% ' . $startTag . str_pad($i, 2, "0", STR_PAD_LEFT) . " ");
+                $iPosStartTagAfter = preg_match('/\{%\s*' . $startTag . ' /sU', $result, $matchesTmpStartTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
+                $iPosEndTag = preg_match('/\{%\s*' .  $endTag . '\s*\%}/sU', $result, $matchesTmpEndTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
+            
+                if (($iPosStartTagAfter && $iPosEndTag) && $matchesTmpStartTag[0][1] < $matchesTmpEndTag[0][1]) {
+                    array_push($iEndTag, $i);
+                    break;
+                }
+
                 $regex = '/\{%\s*' .  $endTag . '\s*\%}/sU';
                 $result = preg_replace_callback($regex, function ($matches) use ($i, $endTag) {
                     return '{% ' .  $endTag . str_pad($i, 2, "0", STR_PAD_LEFT) . " %}";
                 }, $result, 1);
             }
-
-            $iEndTag = [];
 
             return [$iEndTag, $result];
         };
@@ -273,44 +280,73 @@ class Template
         return $result;
     }
     
-    protected function parseFor($variables)
+    protected function parseFor($variables, $forStart = 1, $forCount = null, $partialTemplate = null)
     {
+        if (empty($partialTemplate)) {
+            $partialTemplate = $this->template;
+        }
+        if (empty($forCount)) {
+            list($forCount, $result) = $this->prepareDocumentToParse($partialTemplate, "for", "endfor");
+        } else {
+            $result = $partialTemplate;
+        }
+
         // Find {%for%} and {%endfor%} and replace the content between them
-        $regex = '/\{%\s*for(.*)\s*\%}(.*)\{%\s*endfor\s*\%}/sU';
-        $result = preg_replace_callback($regex, function ($matches) use ($variables) {
-    
-            $content = "";
-            $regexFor = '/\s*(?<key1>[\w\d_-]+)(\s*,\s*(?<key2>[\w\d_-]+))?\s+in\s+(?<array>.*)\s*/';
-            $forExpression = trim($matches[1]);
-            if (preg_match($regexFor, $forExpression, $matchesFor)) {
-                $array = $this->evaluateVariable($matchesFor["array"], $variables);
-                if (!empty($matchesFor["key2"])) {
-                    $forKey = $matchesFor["key1"];
-                    $forValue = $matchesFor["key2"];
-                } else {
-                    $forKey = "__index";
-                    $forValue = $matchesFor["key1"];
+        for ($i=$forStart; $i <= $forCount; $i++) {
+            $position = str_pad($i, 2, "0", STR_PAD_LEFT);
+
+            $regex = '/\{%\s*for' . $position . '(.*)\s*\%}(.*)\{%\s*endfor' . $position . '\s*\%}/sU';
+            $result = preg_replace_callback($regex, function ($matches) use ($variables) {
+        
+                $content = "";
+                $regexFor = '/\s*(?<key1>[\w\d_-]+)(\s*,\s*(?<key2>[\w\d_-]+))?\s+in\s+(?<array>.*)\s*/';
+                $forExpression = trim($matches[1]);
+                if (preg_match($regexFor, $forExpression, $matchesFor)) {
+                    $array = $this->evaluateVariable($matchesFor["array"], $variables);
+                    if (!empty($matchesFor["key2"])) {
+                        $forKey = $matchesFor["key1"];
+                        $forValue = $matchesFor["key2"];
+                    } else {
+                        $forKey = "__index";
+                        $forValue = $matchesFor["key1"];
+                    }
+                    $index = 0;
+                    $loop = [];
+                    foreach ($array as $key => $value) {
+                        $loop["first"] = $index == 0;
+                        $loop["last"] = $index == count($array) - 1;
+                        $loop["index"] = $index + 1;
+                        $loop["index0"] = $index;
+                        $loop["revindex"] = count($array) - $index;
+                        $loop["revindex0"] = count($array) - $index - 1;
+                        $loop["length"] = count($array);
+                        $loop["even"] = $index % 2 == 0;
+                        $loop["odd"] = $index % 2 == 1;
+
+                        $loopControl = [
+                            $forKey => $key, 
+                            $forValue => $value
+                        ];
+
+                        // Find {% for00 %} and get the array with 00 pattern
+                        $regexNestedFor = '/\{%\s*for(\d{2}).*\%}/sU';
+                        if (preg_match_all($regexNestedFor, $matches[2], $matchesNestedFor)) {
+                            foreach ($matchesNestedFor[1] as $matchNested) {
+                                $matchNested = intval($matchNested);
+                                $matches[2] = $this->parseFor($variables + $loopControl, $matchNested, $matchNested, $matches[2]);
+                            }
+                        }
+                        
+                        
+                        $content .= $this->parseVariables($matches[2], $variables + $loopControl + ["loop" => $loop]);
+                        $index++;
+                    }
                 }
-                $index = 0;
-                $loop = [];
-                foreach ($array as $key => $value) {
-                    $loop["first"] = $index == 0;
-                    $loop["last"] = $index == count($array) - 1;
-                    $loop["index"] = $index + 1;
-                    $loop["index0"] = $index;
-                    $loop["revindex"] = count($array) - $index;
-                    $loop["revindex0"] = count($array) - $index - 1;
-                    $loop["length"] = count($array);
-                    $loop["even"] = $index % 2 == 0;
-                    $loop["odd"] = $index % 2 == 1;
-                    
-                    $content .= $this->parseVariables($matches[2], $variables + [$forKey => $key, $forValue => $value] + ["loop" => $loop]);
-                    $index++;
-                }
-            }
-    
-            return $content;
-        }, $this->template);
+        
+                return $content;
+            }, $result);
+        }
+
         return $result;
     }
     
