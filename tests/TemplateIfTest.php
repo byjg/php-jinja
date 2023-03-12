@@ -68,4 +68,40 @@ class TemplateIfTest extends TestCase
         // $template = new \ByJG\JinjaPhp\Template("{% if false %}true{% elseif false %}false{% elseif false %}elseif{% else %}else{% endif %}");
         // $this->assertEquals("else", $template->render
     }
+
+    public function testMultipleIf()
+    {
+        $template = new \ByJG\JinjaPhp\Template("{% if true %}true1{% endif %}{% if true %}true2{% endif %}");
+        $this->assertEquals("true1true2", $template->render());
+
+        $template = new \ByJG\JinjaPhp\Template("{% if true %}true1{% endif %}{% if false %}true2{% endif %}");
+        $this->assertEquals("true1", $template->render());
+
+        $template = new \ByJG\JinjaPhp\Template("{% if false %}true1{% endif %}{% if true %}true2{% endif %}");
+        $this->assertEquals("true2", $template->render());
+
+        $template = new \ByJG\JinjaPhp\Template("{% if false %}true1{% endif %}{% if false %}true2{% endif %}");
+        $this->assertEquals("", $template->render());
+    }
+
+    public function testNestedIf()
+    {
+        $template = new \ByJG\JinjaPhp\Template("{% if true %}{% if true %}true{% endif %}{% endif %}");
+        $this->assertEquals("true", $template->render());
+
+        $template = new \ByJG\JinjaPhp\Template("{% if true %}{% if false %}true{% endif %}{% endif %}");
+        $this->assertEquals("", $template->render());
+
+        $template = new \ByJG\JinjaPhp\Template("{% if false %}{% if true %}true{% endif %}{% endif %}");
+        $this->assertEquals("", $template->render());
+
+        $template = new \ByJG\JinjaPhp\Template("{% if false %}{% if false %}true{% endif %}{% endif %}");
+        $this->assertEquals("", $template->render());
+
+        $template = new \ByJG\JinjaPhp\Template("{% if true %}{% if true %}true1{% endif %}{% endif %}{% if true %}here{% if false %}true2{% endif %}{% endif %}");
+        $this->assertEquals("true1here", $template->render());
+
+        $template = new \ByJG\JinjaPhp\Template("{% if true %}{% if true %}true1{% endif %}{% endif %}{% if true %}here{% if false %}true2{% endif %}{% endif %}{% if true %}{% if true %}true1{% endif %}{% endif %}{% if true %}here{% if false %}true2{% endif %}{% endif %}");
+        $this->assertEquals("true1heretrue1here", $template->render());
+    }
 }

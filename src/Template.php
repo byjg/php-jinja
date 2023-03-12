@@ -183,22 +183,93 @@ class Template
         eval("\$evalResult = $valueToEvaluate;");
         return $evalResult;
     }
+
+    protected function prepareDocumentToParse($partialTemplate, $startTag, $endTag)
+    {
+        // count the number of {% $startTag %} and {% $endTag %} tags using regex
+        $regex = '/\{%\s*' . $startTag . '(.*)\%}/sU';
+        preg_match_all($regex, $partialTemplate, $matches);
+        $startTagCount = count($matches[0]);
+        $regex = '/\{%\s*' . $endTag . '\s*\%}/sU';
+        preg_match_all($regex, $partialTemplate, $matches);
+        $endTagCount = count($matches[0]);
+        if ($startTagCount != $endTagCount) {
+            throw new \Exception("The number of {% $startTag %} and {% $endTag %} tags does not match");
+        }
+
+        if ($startTagCount == 0) {
+            return [0, $partialTemplate];
+        }
+
+        // find all {% $startTag %} and replace then with {% $startTag00%} where 00 can be 01, 02, 03, etc.
+        $iStartTag = 0;
+        $iEndTag = [];
+        $result = $partialTemplate;
+
+        // Close the closest {% $endTag %} tags before opening a new {% $startTag %} tag
+        $fixArray = function ($iEndTag, $endTag, $result) {
+            $iEndTag = array_reverse($iEndTag);
+
+            foreach ($iEndTag as $i) {
+                $regex = '/\{%\s*' .  $endTag . '\s*\%}/sU';
+                $result = preg_replace_callback($regex, function ($matches) use ($i, $endTag) {
+                    return '{% ' .  $endTag . str_pad($i, 2, "0", STR_PAD_LEFT) . " %}";
+                }, $result, 1);
+            }
+
+            $iEndTag = [];
+
+            return [$iEndTag, $result];
+        };
+
+        while ($iStartTag < $startTagCount) {
+            $regex = '/\{%\s*' . $startTag . ' /sU';
+            $iStartTag++;
+            $result = preg_replace_callback($regex, function ($matches) use ($iStartTag, $startTag) {
+                return '{% ' . $startTag . str_pad($iStartTag, 2, "0", STR_PAD_LEFT) . " ";
+            }, $result, 1);
+
+            $iPosStartTag = strpos($result, '{% ' . $startTag . str_pad($iStartTag, 2, "0", STR_PAD_LEFT) . " ");
+            $iPosStartTagAfter = preg_match('/\{%\s*' . $startTag . ' /sU', $result, $matchesTmpStartTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
+            $iPosEndTag = preg_match('/\{%\s*' .  $endTag . '\s*\%}/sU', $result, $matchesTmpEndTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
+
+            if ($iPosStartTagAfter && $iPosEndTag && $matchesTmpEndTag[0][1] < $matchesTmpStartTag[0][1]) {
+                $result = preg_replace_callback('/\{%\s*' .  $endTag . '\s*\%}/sU', function ($matches) use ($iStartTag, $endTag) {
+                    return '{% ' .  $endTag . str_pad($iStartTag, 2, "0", STR_PAD_LEFT) . " %}";
+                }, $result, 1);
+
+                list($iEndTag, $result) = $fixArray($iEndTag, $endTag, $result);
+            } else {
+                $iEndTag[] = $iStartTag;
+            }
+        }
+
+        list($iEndTag, $result) = $fixArray($iEndTag, $endTag, $result);
+
+        return [$startTagCount, $result];
+    }
     
     protected function parseIf($partialTemplate, $variables = [])
     {
+        list($ifCount, $result) = $this->prepareDocumentToParse($partialTemplate, "if", "endif");
+ 
         // Find {%if%} and {%endif%} and replace the content between them
-        $regex = '/\{%\s*if(.*)\%}(.*)\{%\s*endif\s*\%}/sU';
-        $result = preg_replace_callback($regex, function ($matches) use ($variables) {
-            $condition = trim($matches[1]);
-            $ifContent = $matches[2];
-            $ifParts = preg_split('/\{%\s*else\s*\%}/', $ifContent);
-            if ($this->evaluateVariable($condition, $variables)) {
-                return $ifParts[0];
-            } else if (isset($ifParts[1])) {
-                return $ifParts[1];
-            }
-            return "";
-        }, $partialTemplate);
+        for ($i=1; $i <= $ifCount; $i++) {
+            $position = str_pad($i, 2, "0", STR_PAD_LEFT);
+
+            $regex = '/\{%\s*if' . $position . '(.*)\%}(.*)\{%\s*endif' . $position . '\s*\%}/sU';
+            $result = preg_replace_callback($regex, function ($matches) use ($variables) {
+                $condition = trim($matches[1]);
+                $ifContent = $matches[2];
+                $ifParts = preg_split('/\{%\s*else\s*\%}/', $ifContent);
+                if ($this->evaluateVariable($condition, $variables)) {
+                    return $ifParts[0];
+                } else if (isset($ifParts[1])) {
+                    return $ifParts[1];
+                }
+                return "";
+            }, $result);
+        }
         return $result;
     }
     
