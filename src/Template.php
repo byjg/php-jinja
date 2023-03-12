@@ -143,21 +143,30 @@ class Template
                 $array[$i] = $this->evaluateVariable($array[$i], $variables);
             }
             return $array;
-        } else if (preg_match('/(<=|>=|==|!=|<>|\*\*|&&\|\||[\+\-\/\*\%\<\>])/', $content) ) {
-            $array = preg_split('/(<=|>=|==|!=|<>|\*\*|&&\|\||[\+\-\/\*\%\<\>])/', $content, -1, PREG_SPLIT_DELIM_CAPTURE);
+        } else if (preg_match('/(<=|>=|==|!=|<>|\*\*|&&|\|\||[\+\-\/\*\%\<\>])/', $content) ) {
+            $array = preg_split('/(<=|>=|==|!=|<>|\*\*|&&|\|\||[\+\-\/\*\%\<\>])/', $content, -1, PREG_SPLIT_DELIM_CAPTURE);
             for ($i = 0; $i < count($array); $i=$i+2) {
                 $array[$i] = $this->evaluateVariable($array[$i], $variables);
                 if (is_string($array[$i])) {
                     $array[$i] = "'" . $array[$i] . "'";
+                } else if (is_bool($array[$i])) {
+                    $array[$i] = $array[$i] ? "true" : "false";
                 }
             }
-            $valueToEvaluate = implode("", $array);
+            $valueToEvaluate = implode(" ", $array);
+        } else if (preg_match("/^!/", trim($content))) {
+            $valueToEvaluate = $content;
+
         } else {
             $var = $this->getVar($content, $variables, $undefined);
             if (is_array($var)) {
                 return $var;
             }
             $valueToEvaluate = "'" . $this->getVar($content, $variables, $undefined) . "'";
+        }
+
+        if (is_bool($valueToEvaluate)) {
+            return $valueToEvaluate;
         }
     
         $evalResult = "";
