@@ -65,6 +65,10 @@ Some filters are implemented:
 {{ var | join(',') }}
 {{ var | split }}
 {{ var | split(',') }}
+{{ var | capitalize }}
+{{ var | trim }}
+{{ var | trim('-') }}
+{{ var | length }}
 ```
 
 ### Math Operations
