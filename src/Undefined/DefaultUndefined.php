@@ -2,7 +2,7 @@
 
 namespace ByJG\JinjaPhp\Undefined;
 
-class DefaultUndefined
+class DefaultUndefined implements UndefinedInterface
 {
     protected $default = '';
 

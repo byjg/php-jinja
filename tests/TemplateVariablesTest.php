@@ -2,6 +2,7 @@
 
 namespace Test;
 
+use ByJG\JinjaPhp\Exception\TemplateParseException;
 use PHPUnit\Framework\TestCase;
 
 class TemplateVariablesTest extends TestCase
@@ -32,6 +33,14 @@ class TemplateVariablesTest extends TestCase
         $template = new \ByJG\JinjaPhp\Template("Test var1: {{ var1 }}.");
         $template->withUndefined(new \ByJG\JinjaPhp\Undefined\DefaultUndefined());
         $this->assertEquals("Test var1: .", $template->render(['var2' => 'value1']));
+    }
+
+    public function testInvalidVar()
+    {
+        $this->expectException(TemplateParseException::class);
+        $this->expectExceptionMessage("Variable xyz not defined");
+        $template = new \ByJG\JinjaPhp\Template("{% for xyz in array %}{{ xyz }}{% endfor %}{{ xyz }}");
+        $template->render(['array' => ['val1', 'val2']]);
     }
 
     public function testRenderArray()

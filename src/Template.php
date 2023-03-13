@@ -2,8 +2,10 @@
 
 namespace ByJG\JinjaPhp;
 
+use ByJG\JinjaPhp\Exception\TemplateParseException;
 use ByJG\JinjaPhp\Undefined\DefaultUndefined;
 use ByJG\JinjaPhp\Undefined\StrictUndefined;
+use ByJG\JinjaPhp\Undefined\UndefinedInterface;
 
 class Template
 {
@@ -18,7 +20,7 @@ class Template
         $this->undefined = new StrictUndefined();
     }
 
-    public function withUndefined($undefined)
+    public function withUndefined(UndefinedInterface $undefined)
     {
         $this->undefined = $undefined;
         return $this;
@@ -204,7 +206,7 @@ class Template
         preg_match_all($regex, $partialTemplate, $matches);
         $endTagCount = count($matches[0]);
         if ($startTagCount != $endTagCount) {
-            throw new \Exception("The number of {% $startTag %} and {% $endTag %} tags does not match");
+            throw new TemplateParseException("The number of {% $startTag %} and {% $endTag %} tags does not match");
         }
 
         if ($startTagCount == 0) {

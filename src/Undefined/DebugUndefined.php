@@ -2,7 +2,7 @@
 
 namespace ByJG\JinjaPhp\Undefined;
 
-class DebugUndefined
+class DebugUndefined implements UndefinedInterface
 {
         protected $message = 'NOT_FOUND';
 

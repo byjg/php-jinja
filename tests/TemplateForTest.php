@@ -2,6 +2,7 @@
 
 namespace Test;
 
+use ByJG\JinjaPhp\Exception\TemplateParseException;
 use PHPUnit\Framework\TestCase;
 
 class TemplateForTest extends TestCase
@@ -46,6 +47,14 @@ class TemplateForTest extends TestCase
 
         $template = new \ByJG\JinjaPhp\Template("{% for xyz in array %}{{ xyz }}{% for item in array2 %}{{ item }}{% endfor %}{% endfor %}{% for xyz in array3 %}{{ xyz }}{% for item in array4 %}{{ item }}{% endfor %}{% endfor %}");
         $this->assertEquals("val1val3val4val2val3val4val5val7val8val6val7val8", $template->render(['array' => ['val1', 'val2'], 'array2' => ['val3', 'val4'], 'array3' => ['val5', 'val6'], 'array4' => ['val7', 'val8']]));
+    }
+
+    public function testInvalidFor()
+    {
+        $this->expectException(TemplateParseException::class);
+        $this->expectExceptionMessage("The number of {% for %}");
+        $template = new \ByJG\JinjaPhp\Template("{% for xyz in array %}not closed");
+        $template->render(['array' => ['val1', 'val2']]);
     }
 
     public function testForMultiline()
