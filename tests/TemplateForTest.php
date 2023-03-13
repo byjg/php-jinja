@@ -20,6 +20,9 @@ class TemplateForTest extends TestCase
 
         $template = new \ByJG\JinjaPhp\Template("{% for xyz in array.nested %}{{ xyz }}{% endfor %}");
         $this->assertEquals("val1val2", $template->render(['array' => ['nested' => ['val1', 'val2']]]));
+
+        $template = new \ByJG\JinjaPhp\Template("{% for xyz in array.nested %}{% if xyz == 'val1' %}@{% endif %}{{ xyz }}{% endfor %}");
+        $this->assertEquals("@val1val2", $template->render(['array' => ['nested' => ['val1', 'val2']]]));
     }
 
     public function testForDict()

@@ -369,7 +369,8 @@ class Template
                             }
                         }
                         
-                        $resultContent = $this->parseVariables($matches[4], $variables + $loopControl + ["loop" => $loop]);
+                        $forVariables = $variables + $loopControl + ["loop" => $loop];
+                        $resultContent = $this->parseVariables($this->parseIf($matches[4], $forVariables), $forVariables);
                         if ($leftWhiteSpace == "-") {
                             $resultContent = ltrim($resultContent);
                         }
