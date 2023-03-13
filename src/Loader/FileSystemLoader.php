@@ -44,7 +44,11 @@ class FileSystemLoader implements LoaderInterface
      */
     public function getTemplate($template)
     {
-        $filename = $this->path . DIRECTORY_SEPARATOR . $template . $this->extension;
+        $filename = $this->path . DIRECTORY_SEPARATOR . $template;
+        if (substr($filename, -strlen($this->extension)) !== $this->extension) {
+            $filename .= $this->extension;
+        }
+
         if (!file_exists($filename)) {
             throw new \InvalidArgumentException("The template '{$filename}' does not exist.");
         }

@@ -23,6 +23,13 @@ class LoaderTest extends TestCase
         $this->assertEquals('Simple template ok', $template->render(['var' => 'ok']));
     }
 
+    public function testFileLoaderWithExtension()
+    {
+        $loader = new FileSystemLoader(__DIR__ . '/templates');
+        $template = $loader->getTemplate("file.txt.jinja");
+        $this->assertEquals('Simple template ok', $template->render(['var' => 'ok']));
+    }
+
     public function testFileLoaderDoesntExist()
     {
         $this->expectException(InvalidArgumentException::class);
