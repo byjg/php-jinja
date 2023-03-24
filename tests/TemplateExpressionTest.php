@@ -31,6 +31,9 @@ class TemplateExpressionTest extends TestCase
 
         $template = new \ByJG\JinjaPhp\Template("{{ (2 + 3) ** 2 }}");
         $this->assertEquals("25", $template->render());
+
+        $template = new \ByJG\JinjaPhp\Template("{{ a + b | join(', ') }}");
+        $this->assertEquals("1, 2, 3, 4, 5, 6", $template->render(["a" => [1, 2, 3], "b" => [4, 5, 6]]));
     }
 
     public function testConcatenation()
@@ -66,5 +69,26 @@ class TemplateExpressionTest extends TestCase
         $this->assertEquals("", $template->render());
     }
 
+    public function testIn()
+    {
+        $template = new \ByJG\JinjaPhp\Template("{% if 'a' in ['a', 'b'] %}true{%else%}false{%endif%}");
+        $this->assertEquals("true", $template->render());
+
+        $template = new \ByJG\JinjaPhp\Template("{% if 'c' in ['a', 'b'] %}true{%else%}false{%endif%}");
+        $this->assertEquals("false", $template->render());
+
+        $template = new \ByJG\JinjaPhp\Template("{% if 'test' in 'mytest1' %}true{%else%}false{%endif%}");
+        $this->assertEquals("true", $template->render());
+
+        $template = new \ByJG\JinjaPhp\Template("{% if 'test' in 'none' %}true{%else%}false{%endif%}");
+        $this->assertEquals("false", $template->render());
+
+    // TODO: Fix this test
+    //     $template = new \ByJG\JinjaPhp\Template("{% if a + b in c %}true{%else%}false{%endif%}");
+    //     $this->assertEquals("true", $template->render(["a" => [1], "b" => [2], "c" => [1, 2, 3, 4, 5, 6]]));
+
+    //     $template = new \ByJG\JinjaPhp\Template("{% if a + c in b %}true{%else%}false{%endif%}");
+    //     $this->assertEquals("false", $template->render(["a" => [1], "b" => [2], "c" => [1, 2, 3, 4, 5, 6]]));
+    }
 
 }

@@ -144,7 +144,7 @@ class Template
                 $array[$i] = $this->evaluateVariable($array[$i], $variables);
             }
             return implode("", $array);
-        } else if (preg_match('/^["\'].*["\']$/', trim($content)) || is_numeric(trim($content)) || trim($content) == "true" || trim($content) == "false") {
+        } else if (strpos(trim($content), ' in ') === false && (preg_match('/^["\'].*["\']$/', trim($content)) || is_numeric(trim($content)) || trim($content) == "true" || trim($content) == "false")) {
             $valueToEvaluate = $content;
         // parse variables inside parenthesis
         } else if (preg_match('/\((.*)\)/', $content, $matches)) {
@@ -154,7 +154,7 @@ class Template
             $valueToEvaluate = $this->evaluateVariable($content, $variables);
         // match content with the array representation
         } else if (preg_match('/^\[.*\]$/', trim($content))) {
-            $array = preg_split('/\s*,\s*/', trim($content, "[]"));
+            $array = preg_split('/\s*,\s*/', trim(trim($content), "[]"));
             $retArray = [];
             for ($i = 0; $i < count($array); $i++) {
                 $arData = preg_split('/\s*:\s*/', $array[$i]);
@@ -165,14 +165,31 @@ class Template
                 }
             }
             return $retArray;
-        } else if (preg_match('/(<=|>=|==|!=|<>|\*\*|&&|\|\||[\+\-\/\*\%\<\>])/', $content) ) {
-            $array = preg_split('/(<=|>=|==|!=|<>|\*\*|&&|\|\||[\+\-\/\*\%\<\>])/', $content, -1, PREG_SPLIT_DELIM_CAPTURE);
+        } else if (preg_match('/( in |<=|>=|==|!=|<>|\*\*|&&|\|\||[\+\-\/\*\%\<\>])/', $content) ) {
+            $array = preg_split('/( in |<=|>=|==|!=|<>|\*\*|&&|\|\||[\+\-\/\*\%\<\>])/', $content, -1, PREG_SPLIT_DELIM_CAPTURE);
             for ($i = 0; $i < count($array); $i=$i+2) {
                 $array[$i] = $this->evaluateVariable($array[$i], $variables);
                 if (is_string($array[$i])) {
                     $array[$i] = "'" . $array[$i] . "'";
                 } else if (is_bool($array[$i])) {
                     $array[$i] = $array[$i] ? "true" : "false";
+                } else if ($i > 0 && is_array($array[$i-2]) && is_array($array[$i]) && trim($array[$i-1]) == "+") {
+                    $array[$i-2] = json_encode(array_merge($array[$i-2], $array[$i]));
+                    $array[$i-1] = "";
+                    $array[$i] = "";
+                }
+            }
+            // Search for the operator `in`
+            $inIndex = array_search(" in ", $array);
+            if ($inIndex !== false) {
+                if (is_array($array[$inIndex+1])) {
+                    $array[$inIndex] = in_array($this->evaluateVariable($array[$inIndex-1], $variables), $array[$inIndex+1]) ? "true" : "false";
+                    $array[$inIndex+1] = "";
+                    $array[$inIndex-1] = "";
+                } elseif (is_string($array[$inIndex+1])) {
+                    $array[$inIndex] = strpos($this->evaluateVariable($array[$inIndex+1], $variables), $this->evaluateVariable($array[$inIndex-1], $variables)) !== false ? "true" : "false";
+                    $array[$inIndex+1] = "";
+                    $array[$inIndex-1] = "";
                 }
             }
             $valueToEvaluate = implode(" ", $array);
