@@ -1,5 +1,5 @@
 {
-    "name": "byjg/jinja_php",
+    "name": "byjg/jinja-php",
     "description": "Jinja for PHP",
     "type": "library",
     "require": {},
@@ -12,11 +12,5 @@
             "ByJG\\JinjaPhp\\": "src/"
         }
     },
-    "authors": [
-        {
-            "name": "Joao Gilberto Magalhaes",
-            "email": "joao@byjg.com.br"
-        }
-    ],
     "minimum-stability": "dev"
 }
