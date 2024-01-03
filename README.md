@@ -1,10 +1,10 @@
 # Jinja for PHP
 
-[![Build Status](https://github.com/byjg/jinja_php/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/byjg/jinja_php/actions/workflows/phpunit.yml)
+[![Build Status](https://github.com/byjg/php-jinja/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/byjg/php-jinja/actions/workflows/phpunit.yml)
 [![Opensource ByJG](https://img.shields.io/badge/opensource-byjg-success.svg)](http://opensource.byjg.com)
-[![GitHub source](https://img.shields.io/badge/Github-source-informational?logo=github)](https://github.com/byjg/jinja_php/)
-[![GitHub license](https://img.shields.io/github/license/byjg/jinja_php.svg)](https://opensource.byjg.com/opensource/licensing.html)
-[![GitHub release](https://img.shields.io/github/release/byjg/jinja_php.svg)](https://github.com/byjg/jinja_php/releases/)
+[![GitHub source](https://img.shields.io/badge/Github-source-informational?logo=github)](https://github.com/byjg/php-jinja/)
+[![GitHub license](https://img.shields.io/github/license/byjg/php-jinja.svg)](https://opensource.byjg.com/opensource/licensing.html)
+[![GitHub release](https://img.shields.io/github/release/byjg/php-jinja.svg)](https://github.com/byjg/php-jinja/releases/)
 
 Jinja for PHP is a PHP implementation of the [Jinja2](http://jinja.pocoo.org/) template engine.
 
@@ -184,5 +184,15 @@ echo $template->render($variables);
 ## Installation
 
 ```bash
-composer require byjg/jinja_php
+composer require byjg/jinja-php
 ```
+
+## Dependencies
+
+```mermaid  
+flowchart TD  
+    byjg/jinja-php   
+```
+
+----  
+[Open source ByJG](http://opensource.byjg.com)
