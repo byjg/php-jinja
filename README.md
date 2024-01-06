@@ -113,7 +113,7 @@ TODO: use `and` and `or` instead of `&&` and `||`
 
 ### If
 
-TODO: {% elif %} is not implemented yet.
+@todo: `elif` is not implemented yet.
 
 ```jinja
 {% if var1 == var2 %}
