@@ -33,7 +33,7 @@ Most of the literals are supported. e.g.
 {{ ['a': 1, 'b': 2] }}  // It is different from Python
 ```
 
-TODO: use the python notation for dictionaries.
+@todo: use the python notation for dictionaries.
 
 ### Variables
 
@@ -49,7 +49,7 @@ Most of the variables are supported. e.g.
 {{ myvar.myproperty.a.myproperty.1.myproperty }}
 ```
 
-TODO: The notation with brackets is not yet supported.
+@todo: The notation with brackets is not yet supported.
 
 ### Filters
 
@@ -133,7 +133,7 @@ TODO: use `and` and `or` instead of `&&` and `||`
 
 ### For
 
-TODO: {% else %} is not implemented yet.
+@todo: `else` is not implemented yet.
 
 ```jinja
 {% for item in items %}
