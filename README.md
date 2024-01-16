@@ -6,8 +6,6 @@
 [![GitHub license](https://img.shields.io/github/license/byjg/php-jinja.svg)](https://opensource.byjg.com/opensource/licensing.html)
 [![GitHub release](https://img.shields.io/github/release/byjg/php-jinja.svg)](https://github.com/byjg/php-jinja/releases/)
 
-{% raw %}
-
 Jinja for PHP is a PHP implementation of the [Jinja2](http://jinja.pocoo.org/) template engine.
 
 ## Introduction
@@ -195,7 +193,6 @@ composer require byjg/jinja-php
 flowchart TD  
     byjg/jinja-php   
 ```
-{% endraw %}
 
 ----  
 [Open source ByJG](http://opensource.byjg.com)
