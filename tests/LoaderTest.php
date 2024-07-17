@@ -20,14 +20,14 @@ class LoaderTest extends TestCase
     {
         $loader = new FileSystemLoader(__DIR__ . '/templates');
         $template = $loader->getTemplate("file.txt");
-        $this->assertEquals('Simple template ok', $template->render(['var' => 'ok']));
+        $this->assertEquals('Simple template o"k testing \"test\"', $template->render(['var' => 'o"k testing \"test\"']));
     }
 
     public function testFileLoaderWithExtension()
     {
         $loader = new FileSystemLoader(__DIR__ . '/templates');
         $template = $loader->getTemplate("file.txt.jinja");
-        $this->assertEquals('Simple template ok', $template->render(['var' => 'ok']));
+        $this->assertEquals("Simple template o'k \\'test\\'", $template->render(['var' => "o'k \\'test\\'"]));
     }
 
     public function testFileLoaderDoesntExist()

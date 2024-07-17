@@ -128,6 +128,11 @@ class Template
         } while (count($values) > 0);
         return $content;
     }
+
+    protected function addSlashes($value)
+    {
+        return preg_replace('/([\'\\\\])/', '\\\\$1', $value);
+    }
     
     protected function evaluateVariable($content, $variables, $undefined = null) {
         if (strpos($content, ' | ') !== false) {
@@ -170,7 +175,7 @@ class Template
             for ($i = 0; $i < count($array); $i=$i+2) {
                 $array[$i] = $this->evaluateVariable($array[$i], $variables);
                 if (is_string($array[$i])) {
-                    $array[$i] = "'" . addslashes($array[$i]) . "'";
+                    $array[$i] = "'" . $this->addSlashes($array[$i]) . "'";
                 } else if (is_bool($array[$i])) {
                     $array[$i] = $array[$i] ? "true" : "false";
                 } else if ($i > 0 && is_array($array[$i-2]) && is_array($array[$i]) && trim($array[$i-1]) == "+") {
@@ -201,7 +206,7 @@ class Template
             if (is_array($var)) {
                 return $var;
             }
-            $valueToEvaluate = "'" . addslashes($var) . "'";
+            $valueToEvaluate = "'" . $this->addSlashes($var) . "'";
         }
 
         if (is_bool($valueToEvaluate)) {
