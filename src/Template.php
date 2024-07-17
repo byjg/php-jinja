@@ -170,7 +170,7 @@ class Template
             for ($i = 0; $i < count($array); $i=$i+2) {
                 $array[$i] = $this->evaluateVariable($array[$i], $variables);
                 if (is_string($array[$i])) {
-                    $array[$i] = "'" . $array[$i] . "'";
+                    $array[$i] = "'" . addslashes($array[$i]) . "'";
                 } else if (is_bool($array[$i])) {
                     $array[$i] = $array[$i] ? "true" : "false";
                 } else if ($i > 0 && is_array($array[$i-2]) && is_array($array[$i]) && trim($array[$i-1]) == "+") {
@@ -201,7 +201,7 @@ class Template
             if (is_array($var)) {
                 return $var;
             }
-            $valueToEvaluate = "'" . $this->getVar($content, $variables, $undefined) . "'";
+            $valueToEvaluate = "'" . addslashes($var) . "'";
         }
 
         if (is_bool($valueToEvaluate)) {
