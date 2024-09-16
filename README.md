@@ -166,7 +166,7 @@ Loop control variable:
 ## Usage
 
 ```php
-use ByJG\Jinja\Template;
+use ByJG\JinjaPhp\Template;
 
 $templateString = <<<EOT
 Hello {{ name }}
