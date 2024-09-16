@@ -6,7 +6,7 @@ use PHPUnit\Framework\TestCase;
 
 class TemplateIfTest extends TestCase
 {
-    public function testIf()
+    public function testIf(): void
     {
         $template = new \ByJG\JinjaPhp\Template("{% if true %}true{% endif %}");
         $this->assertEquals("true", $template->render());
@@ -69,7 +69,7 @@ class TemplateIfTest extends TestCase
         // $this->assertEquals("else", $template->render
     }
 
-    public function testMultipleIf()
+    public function testMultipleIf(): void
     {
         $template = new \ByJG\JinjaPhp\Template("{% if true %}true1{% endif %}{% if true %}true2{% endif %}");
         $this->assertEquals("true1true2", $template->render());
@@ -84,7 +84,7 @@ class TemplateIfTest extends TestCase
         $this->assertEquals("", $template->render());
     }
 
-    public function testNestedIf()
+    public function testNestedIf(): void
     {
         $template = new \ByJG\JinjaPhp\Template("{% if true %}{% if true %}true{% endif %}{% endif %}");
         $this->assertEquals("true", $template->render());
@@ -105,7 +105,7 @@ class TemplateIfTest extends TestCase
         $this->assertEquals("true1heretrue1here", $template->render());
     }
 
-    public function testIfMultipleLines()
+    public function testIfMultipleLines(): void
     {
         $templateString = <<<EOT
 =====
@@ -127,7 +127,7 @@ EOT;
         $this->assertEquals($expected, $template->render());
     }
 
-    public function testIfMultipleLinesTrimRightSpace()
+    public function testIfMultipleLinesTrimRightSpace(): void
     {
         $templateString = <<<EOT
 =====
@@ -148,7 +148,7 @@ EOT;
         $this->assertEquals($expected, $template->render());
     }
 
-    public function testIfMultipleLinesTrimleftSpace()
+    public function testIfMultipleLinesTrimleftSpace(): void
     {
         $templateString = <<<EOT
 =====
@@ -169,7 +169,7 @@ EOT;
         $this->assertEquals($expected, $template->render());
     }
 
-    public function testIfMultipleLinesTrimBothSpace()
+    public function testIfMultipleLinesTrimBothSpace(): void
     {
         $templateString = <<<EOT
 =====

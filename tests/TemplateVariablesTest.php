@@ -7,20 +7,20 @@ use PHPUnit\Framework\TestCase;
 
 class TemplateVariablesTest extends TestCase
 {
-    public function testRender()
+    public function testRender(): void
     {
         $template = new \ByJG\JinjaPhp\Template("Test var1: {{ var1 }}.");
         $this->assertEquals("Test var1: value1.", $template->render(['var1' => 'value1']));
     }
 
-    public function testRenderWithUndefined()
+    public function testRenderWithUndefined(): void
     {
         $template = new \ByJG\JinjaPhp\Template("Test var1: {{ var1 }}.");
         $template->withUndefined(new \ByJG\JinjaPhp\Undefined\DebugUndefined());
         $this->assertEquals("Test var1: {{ NOT_FOUND: var1 }}.", $template->render(['var2' => 'value1']));
     }
 
-    public function testRenderWithUndefinedStrict()
+    public function testRenderWithUndefinedStrict(): void
     {
         $template = new \ByJG\JinjaPhp\Template("Test var1: {{ var1 }}.");
         $template->withUndefined(new \ByJG\JinjaPhp\Undefined\StrictUndefined());
@@ -28,14 +28,14 @@ class TemplateVariablesTest extends TestCase
         $template->render(['var2' => 'value1']);
     }
 
-    public function testRenderWithUndefinedDefault()
+    public function testRenderWithUndefinedDefault(): void
     {
         $template = new \ByJG\JinjaPhp\Template("Test var1: {{ var1 }}.");
         $template->withUndefined(new \ByJG\JinjaPhp\Undefined\DefaultUndefined());
         $this->assertEquals("Test var1: .", $template->render(['var2' => 'value1']));
     }
 
-    public function testInvalidVar()
+    public function testInvalidVar(): void
     {
         $this->expectException(TemplateParseException::class);
         $this->expectExceptionMessage("Variable xyz not defined");
@@ -43,7 +43,7 @@ class TemplateVariablesTest extends TestCase
         $template->render(['array' => ['val1', 'val2']]);
     }
 
-    public function testRenderArray()
+    public function testRenderArray(): void
     {
         $template = new \ByJG\JinjaPhp\Template("Test var1: {{ var1.0 }}.");
         $this->assertEquals("Test var1: value1.", $template->render(['var1' => ['value1']]));
@@ -51,7 +51,7 @@ class TemplateVariablesTest extends TestCase
 
     // TODO: test with {{ var1[0] }}
 
-    public function testRenderAssociativeArray()
+    public function testRenderAssociativeArray(): void
     {
         $template = new \ByJG\JinjaPhp\Template("Test var1: {{ var1.key1 }}.");
         $this->assertEquals("Test var1: value1.", $template->render(['var1' => ['key1' => 'value1']]));

@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
 
 class TemplateForTest extends TestCase
 {
-    public function testFor()
+    public function testFor(): void
     {
         $template = new \ByJG\JinjaPhp\Template("{% for xyz in array %}{{ xyz }}{% endfor %}");
         $this->assertEquals("val1val2", $template->render(['array' => ['val1', 'val2']]));
@@ -25,7 +25,7 @@ class TemplateForTest extends TestCase
         $this->assertEquals("@val1val2", $template->render(['array' => ['nested' => ['val1', 'val2']]]));
     }
 
-    public function testForDict()
+    public function testForDict(): void
     {
         $template = new \ByJG\JinjaPhp\Template("{% for key, value in array %}{{ key }}:{{ value }} {% endfor %}");
         $this->assertEquals("key1:val1 key2:val2 ", $template->render(['array' => ['key1' => 'val1', 'key2' => 'val2']]));
@@ -40,7 +40,7 @@ class TemplateForTest extends TestCase
         $this->assertEquals("Item 1 of 3:a Item 2 of 3:b Item 3 of 3:c ", $template->render());
     }
 
-    public function testNestedFor()
+    public function testNestedFor(): void
     {
         $template = new \ByJG\JinjaPhp\Template("{% for xyz in array %}{{ xyz }}{% for item in array2 %}{{ item }}{% endfor %}{% endfor %}");
         $this->assertEquals("val1val3val4val2val3val4", $template->render(['array' => ['val1', 'val2'], 'array2' => ['val3', 'val4']]));
@@ -52,7 +52,7 @@ class TemplateForTest extends TestCase
         $this->assertEquals("val1val3val4val2val3val4val5val7val8val6val7val8", $template->render(['array' => ['val1', 'val2'], 'array2' => ['val3', 'val4'], 'array3' => ['val5', 'val6'], 'array4' => ['val7', 'val8']]));
     }
 
-    public function testInvalidFor()
+    public function testInvalidFor(): void
     {
         $this->expectException(TemplateParseException::class);
         $this->expectExceptionMessage("The number of {% for %}");
@@ -60,7 +60,7 @@ class TemplateForTest extends TestCase
         $template->render(['array' => ['val1', 'val2']]);
     }
 
-    public function testForMultiline()
+    public function testForMultiline(): void
     {
         $templateString = <<<MSG_EOF
 ===
@@ -84,7 +84,7 @@ MSG_EOF;
         $this->assertEquals($expected, $template->render(['array' => ['val1', 'val2']]));
     }
 
-    public function testForMultilineRightSpace()
+    public function testForMultilineRightSpace(): void
     {
         $templateString = <<<MSG_EOF
 ===
@@ -106,7 +106,7 @@ MSG_EOF;
         $this->assertEquals($expected, $template->render(['array' => ['val1', 'val2']]));
     }
 
-    public function testForMultilineLeftSpace()
+    public function testForMultilineLeftSpace(): void
     {
         $templateString = <<<MSG_EOF
 ===
@@ -128,7 +128,7 @@ MSG_EOF;
         $this->assertEquals($expected, $template->render(['array' => ['val1', 'val2']]));
     }
 
-    public function testForMultilineBothSpaces()
+    public function testForMultilineBothSpaces(): void
     {
         $templateString = <<<MSG_EOF
 ===

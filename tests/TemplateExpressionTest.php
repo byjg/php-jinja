@@ -6,7 +6,7 @@ use PHPUnit\Framework\TestCase;
 
 class TemplateExpressionTest extends TestCase
 {
-    public function testMathOperations()
+    public function testMathOperations(): void
     {
         $template = new \ByJG\JinjaPhp\Template("{{ 1 + 1 }}");
         $this->assertEquals("2", $template->render());
@@ -36,7 +36,7 @@ class TemplateExpressionTest extends TestCase
         $this->assertEquals("1, 2, 3, 4, 5, 6", $template->render(["a" => [1, 2, 3], "b" => [4, 5, 6]]));
     }
 
-    public function testConcatenation()
+    public function testConcatenation(): void
     {
         $template = new \ByJG\JinjaPhp\Template("{{ 'a' ~ 'b' }}");
         $this->assertEquals("ab", $template->render());
@@ -48,7 +48,7 @@ class TemplateExpressionTest extends TestCase
         $this->assertEquals("abc", $template->render(['var1' => ['key1' => 'c']]));
     }
 
-    public function testLiteral()
+    public function testLiteral(): void
     {
         $template = new \ByJG\JinjaPhp\Template("{{ 'a' }}");
         $this->assertEquals("a", $template->render());
@@ -69,7 +69,7 @@ class TemplateExpressionTest extends TestCase
         $this->assertEquals("", $template->render());
     }
 
-    public function testIn()
+    public function testIn(): void
     {
         $template = new \ByJG\JinjaPhp\Template("{% if 'a' in ['a', 'b'] %}true{%else%}false{%endif%}");
         $this->assertEquals("true", $template->render());

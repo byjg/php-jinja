@@ -125,6 +125,7 @@ class Template
                     $content = is_null($chars) ? trim($content) : trim($content, $chars);
                     break;
                 case "length":
+                    /** @var array|string $content */
                     $content = is_array($content) ? count($content) : strlen($content);
                     break;
                 case "capitalize":
@@ -157,7 +158,7 @@ class Template
             $valueToEvaluate = $content;
         // parse variables inside parenthesis
         } else if (preg_match('/\((.*)\)/', $content)) {
-            $content = preg_replace_callback('/\((.*)\)/', function($matches) use (&$valueToEvaluate, $variables) {
+            $content = preg_replace_callback('/\((.*)\)/', function($matches) use ($variables) {
                 return $this->evaluateVariable($matches[1], $variables);
             }, $content);
             $valueToEvaluate = $this->evaluateVariable($content, $variables);
@@ -203,6 +204,7 @@ class Template
                     $array[$inIndex-1] = "";
                 }
             }
+            /** @var array $array */
             $valueToEvaluate = implode(" ", $array);
         } else if (str_starts_with(trim($content), "!")) {
             $valueToEvaluate = $content;
@@ -250,7 +252,12 @@ class Template
         $result = $partialTemplate;
 
         // Close the closest {% $endTag %} tags before opening a new {% $startTag %} tag
-        $fixArray = function ($iEndTag, $endTag, $result) use ($startTag) {
+        $fixArray = /**
+         * @return (mixed|null|string|string[])[]
+         *
+         * @psalm-return list{mixed, array<string>|mixed|null|string}
+         */
+        function ($iEndTag, $endTag, $result) use ($startTag): array {
             while (!empty($iEndTag)) {
                 $i = array_pop($iEndTag);
 

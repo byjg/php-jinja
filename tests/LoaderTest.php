@@ -9,28 +9,28 @@ use PHPUnit\Framework\TestCase;
 
 class LoaderTest extends TestCase
 {
-    public function testLoader()
+    public function testLoader(): void
     {
         $loader = new StringLoader();
         $template = $loader->getTemplate("test {{ var }}");
         $this->assertEquals('test ok', $template->render(['var' => 'ok']));
     }
 
-    public function testFileLoader()
+    public function testFileLoader(): void
     {
         $loader = new FileSystemLoader(__DIR__ . '/templates');
         $template = $loader->getTemplate("file.txt");
         $this->assertEquals('Simple template o"k testing \"test\"', $template->render(['var' => 'o"k testing \"test\"']));
     }
 
-    public function testFileLoaderWithExtension()
+    public function testFileLoaderWithExtension(): void
     {
         $loader = new FileSystemLoader(__DIR__ . '/templates');
         $template = $loader->getTemplate("file.txt.jinja");
         $this->assertEquals("Simple template o'k \\'test\\'", $template->render(['var' => "o'k \\'test\\'"]));
     }
 
-    public function testFileLoaderDoesntExist()
+    public function testFileLoaderDoesntExist(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('The template');
@@ -39,7 +39,7 @@ class LoaderTest extends TestCase
         $this->assertEquals('Simple template ok', $template->render(['var' => 'ok']));
     }
 
-    public function testFileLoaderFolderDoesntExist() {
+    public function testFileLoaderFolderDoesntExist(): void {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('The path');
         $loader = new FileSystemLoader(__DIR__ . '/templates2');
