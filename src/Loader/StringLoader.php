@@ -10,7 +10,7 @@ class StringLoader implements LoaderInterface
      * @param string $template
      * @return Template
      */
-    public function getTemplate($template)
+    public function getTemplate(string $template): Template
     {
         return new Template($template);
     }

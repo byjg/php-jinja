@@ -4,5 +4,5 @@ namespace ByJG\JinjaPhp\Undefined;
 
 interface UndefinedInterface
 {
-    public function render($varName);
+    public function render(string $varName): string;
 }

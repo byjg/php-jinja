@@ -2,6 +2,8 @@
 
 namespace ByJG\JinjaPhp\Exception;
 
-class TemplateParseException extends \Exception
+use Exception;
+
+class TemplateParseException extends Exception
 {
 }

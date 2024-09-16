@@ -4,14 +4,14 @@ namespace ByJG\JinjaPhp\Undefined;
 
 class DefaultUndefined implements UndefinedInterface
 {
-    protected $default = '';
+    protected string $default = '';
 
-    public function __construct($default = '')
+    public function __construct(string $default = '')
     {
         $this->default = $default;
     }
 
-    public function render($varName)
+    public function render(string $varName): string
     {
         return $this->default;
     }
