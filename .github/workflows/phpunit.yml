@@ -24,6 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: composer install
+      - run: ./vendor/bin/psalm
       - run: ./vendor/bin/phpunit
 
   Documentation:

@@ -1,6 +1,6 @@
 <?php
 
-namespace Test;
+namespace Tests;
 
 use ByJG\JinjaPhp\Exception\TemplateParseException;
 use PHPUnit\Framework\TestCase;
