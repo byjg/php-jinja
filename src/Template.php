@@ -10,29 +10,26 @@ use ByJG\JinjaPhp\Undefined\UndefinedInterface;
 class Template
 {
 
-    protected $template = null;
-    protected $undefined = null;
-    protected $variables = [];
+    protected string $template;
+    protected UndefinedInterface|null $undefined = null;
+    protected array $variables = [];
 
-    public function __construct($template)
+    public function __construct(string $template)
     {
         $this->template = $template;
         $this->undefined = new StrictUndefined();
     }
 
-    public function withUndefined(UndefinedInterface $undefined)
+    public function withUndefined(UndefinedInterface $undefined): static
     {
         $this->undefined = $undefined;
         return $this;
     }
 
-    public function render($variables = [])
-    {
-        $this->variables = $variables;
-        return $this->renderTemplate($this->template);
-    }
-
-    protected function renderTemplate($template, $variables = [])
+    /**
+     * @throws TemplateParseException
+     */
+    public function render(array $variables = []): string
     {
         $variables = $this->variables + $variables;
         return $this->parseVariables(
@@ -43,7 +40,10 @@ class Template
         );
     }
 
-    protected function getVar($varName, $variables, $undefined = null) {
+    /**
+     * @throws TemplateParseException
+     */
+    protected function getVar(string $varName, array $variables, ?UndefinedInterface $undefined = null) {
         $varAr = explode('.', trim($varName));
         $varName = $varAr[0];
         if (isset($variables[$varName])) {
@@ -59,7 +59,8 @@ class Template
         }
     }
     
-    protected function extractFilterValues($filterCommand) {
+    protected function extractFilterValues(string $filterCommand): array
+    {
         $regex = '/([a-zA-Z0-9_-]+)\s*(\((.*)\))?/';
         preg_match($regex, $filterCommand, $matches);
         $filterName = $matches[1];
@@ -77,8 +78,12 @@ class Template
         }
         return [$filterName, $filterParams];
     }
-    
-    protected function applyFilter($values, $variables) {
+
+    /**
+     * @throws TemplateParseException
+     */
+    protected function applyFilter(array $values, array $variables): array|string
+    {
         $content = trim(array_shift($values));
         $firstTime = true;
         do {
@@ -129,30 +134,28 @@ class Template
         return $content;
     }
 
-    protected function addSlashes($value)
+    protected function addSlashes(string $value): array|string
     {
         return preg_replace('/([\'\\\\])/', '\\\\$1', $value);
     }
-    
-    protected function evaluateVariable($content, $variables, $undefined = null) {
-        if (strpos($content, ' | ') !== false) {
+
+    /**
+     * @throws TemplateParseException
+     */
+    protected function evaluateVariable(string $content, array $variables, UndefinedInterface|null $undefined = null): array|string|bool
+    {
+        if (str_contains($content, ' | ')) {
             return $this->applyFilter(explode(" | ", $content), $variables);
-        // } else if (strpos($content, ' is ') !== false) {
-        //     $content = "{{ " . str_replace(' is ', '}}{{', $content) . " }}";
-        //     return $this->parseVariables($content, $variables);
-        // } else if (strpos($content, ' in ') !== false) {
-        //     $content = "{{ " . str_replace(' in ', '}}{{', $content) . " }}";
-        //     return $this->parseVariables($content, $variables);       
         } else if (preg_match('/\s*~\s*/', $content) ) {
             $array = preg_split('/\s*~\s*/', $content);
             for ($i = 0; $i < count($array); $i++) {
                 $array[$i] = $this->evaluateVariable($array[$i], $variables);
             }
             return implode("", $array);
-        } else if (strpos(trim($content), ' in ') === false && (preg_match('/^["\'].*["\']$/', trim($content)) || is_numeric(trim($content)) || trim($content) == "true" || trim($content) == "false")) {
+        } else if (!str_contains(trim($content), ' in ') && (preg_match('/^["\'].*["\']$/', trim($content)) || is_numeric(trim($content)) || trim($content) == "true" || trim($content) == "false")) {
             $valueToEvaluate = $content;
         // parse variables inside parenthesis
-        } else if (preg_match('/\((.*)\)/', $content, $matches)) {
+        } else if (preg_match('/\((.*)\)/', $content)) {
             $content = preg_replace_callback('/\((.*)\)/', function($matches) use (&$valueToEvaluate, $variables) {
                 return $this->evaluateVariable($matches[1], $variables);
             }, $content);
@@ -192,13 +195,13 @@ class Template
                     $array[$inIndex+1] = "";
                     $array[$inIndex-1] = "";
                 } elseif (is_string($array[$inIndex+1])) {
-                    $array[$inIndex] = strpos($this->evaluateVariable($array[$inIndex+1], $variables), $this->evaluateVariable($array[$inIndex-1], $variables)) !== false ? "true" : "false";
+                    $array[$inIndex] = str_contains($this->evaluateVariable($array[$inIndex + 1], $variables), $this->evaluateVariable($array[$inIndex - 1], $variables)) ? "true" : "false";
                     $array[$inIndex+1] = "";
                     $array[$inIndex-1] = "";
                 }
             }
             $valueToEvaluate = implode(" ", $array);
-        } else if (preg_match("/^!/", trim($content))) {
+        } else if (str_starts_with(trim($content), "!")) {
             $valueToEvaluate = $content;
 
         } else {
@@ -218,7 +221,10 @@ class Template
         return $evalResult;
     }
 
-    protected function prepareDocumentToParse($partialTemplate, $startTag, $endTag)
+    /**
+     * @throws TemplateParseException
+     */
+    protected function prepareDocumentToParse(string $partialTemplate, string $startTag, string $endTag): array
     {
         // count the number of {% $startTag %} and {% $endTag %} tags using regex
         $regex = '/\{%[+-]?\s*' . $startTag . '(.*)\%}/sU';
@@ -250,14 +256,14 @@ class Template
                 $iPosEndTag = preg_match('/\{%[+-]?\s*' .  $endTag . '\s*[+-]?\%}/sU', $result, $matchesTmpEndTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
             
                 if (($iPosStartTagAfter && $iPosEndTag) && $matchesTmpStartTag[0][1] < $matchesTmpEndTag[0][1]) {
-                    array_push($iEndTag, $i);
+                    $iEndTag[] = $i;
                     break;
                 }
 
                 $regex = '/\{%(?<left>[+-])?\s*' .  $endTag . '\s*(?<right>[+-])?\%}/sU';
                 $result = preg_replace_callback($regex, function ($matches) use ($i, $endTag) {
-                    $left = isset($matches['left']) ? $matches['left'] : '';
-                    $right = isset($matches['right']) ? $matches['right'] : '';
+                    $left = $matches['left'] ?? '';
+                    $right = $matches['right'] ?? '';
 
                     return "{%$left " .  $endTag . str_pad($i, 2, "0", STR_PAD_LEFT) . " $right%}";
                 }, $result, 1);
@@ -270,7 +276,7 @@ class Template
             $regex = '/\{%(?<left>[+-])?\s*' . $startTag . ' /sU';
             $iStartTag++;
             $result = preg_replace_callback($regex, function ($matches) use ($iStartTag, $startTag) {
-                $left = isset($matches['left']) ? $matches['left'] : '';
+                $left = $matches['left'] ?? '';
 
                 return "{%$left " . $startTag . str_pad($iStartTag, 2, "0", STR_PAD_LEFT) . " ";
             }, $result, 1);
@@ -281,8 +287,8 @@ class Template
 
             if ($iPosStartTagAfter && $iPosEndTag && $matchesTmpEndTag[0][1] < $matchesTmpStartTag[0][1]) {
                 $result = preg_replace_callback('/\{%(?<left>[+-])?\s*' .  $endTag . '\s*(?<right>[+-])?\%}/sU', function ($matches) use ($iStartTag, $endTag) {
-                    $left = isset($matches['left']) ? $matches['left'] : '';
-                    $right = isset($matches['right']) ? $matches['right'] : '';
+                    $left = $matches['left'] ?? '';
+                    $right = $matches['right'] ?? '';
 
                     return "{%$left " .  $endTag . str_pad($iStartTag, 2, "0", STR_PAD_LEFT) . " $right%}";
                 }, $result, 1);
@@ -297,8 +303,11 @@ class Template
 
         return [$startTagCount, $result];
     }
-    
-    protected function parseIf($partialTemplate, $variables = [])
+
+    /**
+     * @throws TemplateParseException
+     */
+    protected function parseIf(string $partialTemplate, array $variables = []): string
     {
         list($ifCount, $result) = $this->prepareDocumentToParse($partialTemplate, "if", "endif");
  
@@ -331,7 +340,10 @@ class Template
         }
         return $result;
     }
-    
+
+    /**
+     * @throws TemplateParseException
+     */
     protected function parseFor($variables, $forStart = 1, $forCount = null, $partialTemplate = null)
     {
         if (empty($partialTemplate)) {
@@ -411,16 +423,21 @@ class Template
 
         return $result;
     }
-    
-    
-    protected function parseVariables($partialTemplate, $variables) {
+
+    /**
+     * @param string $partialTemplate
+     * @param array $variables
+     * @return array|string|null
+     * @throws TemplateParseException
+     */
+    protected function parseVariables(string $partialTemplate, array $variables): array|string|null
+    {
         // Find {{}} and replace the content between them
         $regex = '/\{\{(.*)\}\}/U';
-        $result = preg_replace_callback($regex, function ($matches) use ($variables) {
+        return preg_replace_callback($regex, function ($matches) use ($variables) {
             // if contains any math operation, evaluate it
             return $this->evaluateVariable($matches[1], $variables);
         }, $partialTemplate);
-        return $result;
     }
 
 }
