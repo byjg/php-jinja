@@ -1,12 +1,12 @@
 <?php
 
-namespace Test;
+namespace Tests;
 
 use PHPUnit\Framework\TestCase;
 
 class TemplateFilterTest extends TestCase
 {
-    public function testUpper()
+    public function testUpper(): void
     {
         $template = new \ByJG\JinjaPhp\Template("{{ 'a' | upper }}");
         $this->assertEquals("A", $template->render());
@@ -21,13 +21,13 @@ class TemplateFilterTest extends TestCase
         $this->assertEquals("A", $template->render(['var1' => ['nested' => 'a']]));
     }
 
-    public function testLower()
+    public function testLower(): void
     {
         $template = new \ByJG\JinjaPhp\Template("{{ 'A' | lower }}");
         $this->assertEquals("a", $template->render());
     }
 
-    public function testJoinFilter()
+    public function testJoinFilter(): void
     {
         $template = new \ByJG\JinjaPhp\Template("{{ [1, 2, 3] | join }}");
         $this->assertEquals("123", $template->render());
@@ -39,7 +39,7 @@ class TemplateFilterTest extends TestCase
         $this->assertEquals("123", $template->render(['var1' => ['nested' => [1, 2, 3]]]));
     }
 
-    public function testJoinFilterWithArgument()
+    public function testJoinFilterWithArgument(): void
     {
         $template = new \ByJG\JinjaPhp\Template("{{ [1, 2, 3] | join(', ') }}");
         $this->assertEquals("1, 2, 3", $template->render());
@@ -60,7 +60,7 @@ class TemplateFilterTest extends TestCase
         $this->assertEquals("1, 2, 3", $template->render(['var1' => ['nested' => [1, 2, 3]], 'delimiter' => ', ']));
     }
 
-    public function testReplace()
+    public function testReplace(): void
     {
         $template = new \ByJG\JinjaPhp\Template("{{ 'aba' | replace('a', 'b') }}");
         $this->assertEquals("bbb", $template->render());
@@ -81,7 +81,7 @@ class TemplateFilterTest extends TestCase
         $this->assertEquals("aec", $template->render());
     }
 
-    public function testDefault()
+    public function testDefault(): void
     {
         $template = new \ByJG\JinjaPhp\Template("{{ var1 | default('abc') }}");
         $this->assertEquals("abc", $template->render());
@@ -99,7 +99,7 @@ class TemplateFilterTest extends TestCase
         $this->assertEquals("abc", $template->render(['var1' => ['nested' => 'nested']]));
     }
 
-    public function testLength()
+    public function testLength(): void
     {
         $template = new \ByJG\JinjaPhp\Template("{{ 'abc' | length }}");
         $this->assertEquals("3", $template->render());
@@ -117,7 +117,7 @@ class TemplateFilterTest extends TestCase
         $this->assertEquals("0", $template->render(['var1' => ['nested' => 'abc']]));
     }
 
-    public function testTrim()
+    public function testTrim(): void
     {
         $template = new \ByJG\JinjaPhp\Template("{{ ' abc ' | trim }}");
         $this->assertEquals("abc", $template->render());
@@ -132,7 +132,7 @@ class TemplateFilterTest extends TestCase
         $this->assertEquals("bc", $template->render());
     }
 
-    public function testCapitalize()
+    public function testCapitalize(): void
     {
         $template = new \ByJG\JinjaPhp\Template("{{ 'abc' | capitalize }}");
         $this->assertEquals("Abc", $template->render());
