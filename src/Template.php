@@ -157,6 +157,8 @@ class Template
      */
     protected function evaluateVariable(string $content, array $variables, UndefinedInterface|null $undefined = null): mixed
     {
+        $trimmedContent = trim($content);
+
         // Handle pipe filters (e.g. "var | upper | join(' ')")
         if (str_contains($content, ' | ')) {
             return $this->applyFilter(explode(" | ", $content), $variables);
@@ -172,7 +174,7 @@ class Template
         }
 
         // Handle literals (strings, numbers, boolean values)
-        if (!str_contains(trim($content), ' in ') && (preg_match('/^["\'].*["\']$/', trim($content)) || is_numeric(trim($content)) || trim($content) == "true" || trim($content) == "false")) {
+        if (!str_contains($trimmedContent, ' in ') && (preg_match('/^["\'].*["\']$/', $trimmedContent) || is_numeric($trimmedContent) || $trimmedContent == "true" || $trimmedContent == "false")) {
             return $this->evaluateValue($content);
         }
 
@@ -184,10 +186,9 @@ class Template
             return $this->evaluateValue($this->evaluateVariable($content, $variables));
         }
 
-
         // Handle array declarations with brackets (e.g. [1, 2, 'key': 'value'])
-        if (preg_match('/^\[.*\]$/', trim($content))) {
-            $array = preg_split('/\s*,\s*/', trim(trim($content), "[]"));
+        if (preg_match('/^\[.*\]$/', $trimmedContent)) {
+            $array = preg_split('/\s*,\s*/', trim($trimmedContent, "[]"));
             $retArray = [];
             for ($i = 0; $i < count($array); $i++) {
                 $arData = preg_split('/\s*:\s*/', $array[$i]);
@@ -264,12 +265,12 @@ class Template
                 $valueToEvaluate = implode(" ", $array);
                 return $this->evaluateValue($valueToEvaluate);
             } else {
-                return trim($content);
+                return $trimmedContent;
             }
         }
 
         // Handle negation operator
-        if (str_starts_with(trim($content), "!")) {
+        if (str_starts_with($trimmedContent, "!")) {
             return $this->evaluateValue($content);
         }
 

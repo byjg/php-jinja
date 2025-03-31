@@ -97,6 +97,26 @@ class TemplateIfTest extends TestCase
                 ['foo' => 'rock in the water'],
                 "true"
             ],
+            'check in' => [
+                "{% if foo in ['rock', 'classic'] %}true{%else%}false{% endif %}",
+                ['foo' => 'rock'],
+                "true"
+            ],
+            'check in false' => [
+                "{% if foo in ['rock', 'classic'] %}true{%else%}false{% endif %}",
+                ['foo' => 'jazz'],
+                "false"
+            ],
+            'check in in' => [
+                "{% if foo in ['rock in the water', 'classic'] %}true{%else%}false{% endif %}",
+                ['foo' => 'rock in the water'],
+                "true"
+            ],
+            'check in in false' => [
+                "{% if foo in ['rock in the water', 'classic'] %}true{%else%}false{% endif %}",
+                ['foo' => 'jazz'],
+                "false"
+            ],
             'check substring in array element' => [
                 "{% if 'test' in var1.type %}true{%else%}false{% endif %}", 
                 ['var1' => ['type' => 'test(1)']], 
