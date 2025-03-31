@@ -13,6 +13,7 @@ class ArrayEvaluator extends AbstractEvaluator
     /**
      * {@inheritdoc}
      */
+    #[\Override]
     public function canEvaluate(string $content): bool
     {
         return preg_match('/^\[.*\]$/', $content) === 1;
@@ -22,6 +23,7 @@ class ArrayEvaluator extends AbstractEvaluator
      * {@inheritdoc}
      * @throws TemplateParseException
      */
+    #[\Override]
     public function evaluate(string $content, array $variables, ?UndefinedInterface $undefined = null): mixed
     {
         $array = preg_split('/\s*,\s*/', trim($content, "[]"));

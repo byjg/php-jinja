@@ -23,7 +23,7 @@ abstract class AbstractEvaluator implements EvaluatorInterface
         $this->evaluatorChain = $evaluatorChain;
     }
 
-    protected function getWorkingContent(string $content): string
+    protected function getWorkingContent(string $content): string|null
     {
         $workingContent = trim($content);
         $quoteMap = [];
@@ -76,9 +76,10 @@ abstract class AbstractEvaluator implements EvaluatorInterface
      * Adds slashes to a string
      *
      * @param string $value The value to escape
-     * @return string The escaped value
+     *
+     * @return null|string The escaped value
      */
-    protected function addSlashes(string $value): string
+    protected function addSlashes(string $value): string|null
     {
         return preg_replace('/([\'\\\\])/', '\\\\$1', $value);
     }

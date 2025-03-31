@@ -11,6 +11,7 @@ class DefaultUndefined implements UndefinedInterface
         $this->default = $default;
     }
 
+    #[\Override]
     public function render(string $varName): string
     {
         return $this->default;

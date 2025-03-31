@@ -13,6 +13,7 @@ class OperatorEvaluator extends AbstractEvaluator
     /**
      * {@inheritdoc}
      */
+    #[\Override]
     public function canEvaluate(string $content): bool
     {
         return preg_match('/( in |<=|>=|==|!=|<>|\*\*|&&|\|\|| and | or |[\+\-\/\*\%\<\>])/', $content) === 1;
@@ -22,6 +23,7 @@ class OperatorEvaluator extends AbstractEvaluator
      * {@inheritdoc}
      * @throws TemplateParseException
      */
+    #[\Override]
     public function evaluate(string $content, array $variables, ?UndefinedInterface $undefined = null): mixed
     {
         // Replace content inside quotes with placeholders to avoid false matches
@@ -74,6 +76,7 @@ class OperatorEvaluator extends AbstractEvaluator
         // Special handling for 'in' operator
         $inIndex = array_search(" in ", $array);
         if ($inIndex !== false) {
+            $inIndex = intval($inIndex);
             // Check if value exists in array
             if (is_array($array[$inIndex+1])) {
                 $valueToCompare = $this->evaluateValue($array[$inIndex-1], $variables, $undefined);
@@ -100,7 +103,8 @@ class OperatorEvaluator extends AbstractEvaluator
                 $value = '';
             }
         }
-        
+
+        /** @psalm-suppress InvalidArgument */
         $valueToEvaluate = implode(" ", $array);
         return $this->evalPhpExpression($valueToEvaluate);
     }

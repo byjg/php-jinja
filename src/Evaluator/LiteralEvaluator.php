@@ -12,6 +12,7 @@ class LiteralEvaluator extends AbstractEvaluator
     /**
      * {@inheritdoc}
      */
+    #[\Override]
     public function canEvaluate(string $content): bool
     {
         // Detect strings, numbers, and boolean literals
@@ -25,6 +26,7 @@ class LiteralEvaluator extends AbstractEvaluator
     /**
      * {@inheritdoc}
      */
+    #[\Override]
     public function evaluate(string $content, array $variables, ?UndefinedInterface $undefined = null): mixed
     {
         return $this->evalPhpExpression($content);

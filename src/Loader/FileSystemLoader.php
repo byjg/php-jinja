@@ -44,6 +44,7 @@ class FileSystemLoader implements LoaderInterface
      * @param string $template
      * @return Template
      */
+    #[\Override]
     public function getTemplate(string $template): Template
     {
         $filename = $this->path . DIRECTORY_SEPARATOR . $template;

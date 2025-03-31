@@ -30,6 +30,7 @@ class FilterEvaluator extends AbstractEvaluator
     /**
      * {@inheritdoc}
      */
+    #[\Override]
     public function canEvaluate(string $content): bool
     {
         return str_contains($content, ' | ');
@@ -39,6 +40,7 @@ class FilterEvaluator extends AbstractEvaluator
      * {@inheritdoc}
      * @throws TemplateParseException
      */
+    #[\Override]
     public function evaluate(string $content, array $variables, ?UndefinedInterface $undefined = null): mixed
     {
         return $this->applyFilter(explode(" | ", $content), $variables, $undefined);

@@ -28,6 +28,7 @@ class VariableEvaluator extends AbstractEvaluator
     /**
      * {@inheritdoc}
      */
+    #[\Override]
     public function canEvaluate(string $content): bool
     {
         // This evaluator is a fallback, returns true for any content
@@ -38,6 +39,7 @@ class VariableEvaluator extends AbstractEvaluator
     /**
      * {@inheritdoc}
      */
+    #[\Override]
     public function evaluate(string $content, array $variables, ?UndefinedInterface $undefined = null): mixed
     {
         // Handle negation operator
