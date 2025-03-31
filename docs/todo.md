@@ -6,4 +6,5 @@ The following features are not implemented yet:
 - [x] Implement support for the notation with brackets for variables.
 - [x] Use `and` and `or` alongside with `&&` and `||` in logic operations.
 - [x] Implement elif in if statements.
-- [ ] Implement else for loops. 
+- [x] Implement else for loops.
+- [ ] Implement nested for loops.

@@ -407,15 +407,35 @@ class Template
             $position = str_pad((string)$i, 2, "0", STR_PAD_LEFT);
 
             $regex = '/\{%([-+])?\s*for' . $position . '(.*)\s*([-+])?\%}(.*)\{%\s*endfor' . $position . '\s*\%}/sU';
-            $partial->result = preg_replace_callback($regex, function ($matches) use ($variables) {
+            $partial->result = preg_replace_callback($regex, function ($matches) use ($variables): string {
         
                 $content = "";
                 $regexFor = '/\s*(?<key1>[\w\d_-]+)(\s*,\s*(?<key2>[\w\d_-]+))?\s+in\s+(?<array>.*)\s*/';
                 $leftWhiteSpace = trim($matches[1]);
                 $forExpression = trim($matches[2]);
                 $rightWhiteSpace = trim($matches[3]);
+                $loopContent = $matches[4] ?? '';
+                
+                // Check if there's an else block in the for loop
+                $elseParts = preg_split('/\{%\s*else\s*\%}/', $loopContent, 2);
+                $forContent = $elseParts[0];
+                $elseContent = isset($elseParts[1]) ? $elseParts[1] : "";
+                
                 if (preg_match($regexFor, $forExpression, $matchesFor)) {
                     $array = $this->evaluateVariable($matchesFor["array"], $variables);
+                    
+                    // If the array is empty and there's an else block, render the else content
+                    if (empty($array) && !empty($elseContent)) {
+                        $elseResult = $this->parseVariables($this->parseIf($elseContent, $variables), $variables);
+                        if ($leftWhiteSpace == "-") {
+                            $elseResult = ltrim($elseResult);
+                        }
+                        if ($rightWhiteSpace == "-") {
+                            $elseResult = rtrim($elseResult);
+                        }
+                        return (string)$elseResult;
+                    }
+                    
                     if (!empty($matchesFor["key2"])) {
                         $forKey = $matchesFor["key1"];
                         $forValue = $matchesFor["key2"];
@@ -443,15 +463,15 @@ class Template
 
                         // Find {% for00 %} and get the array with 00 pattern
                         $regexNestedFor = '/\{%\s*for(\d{2}).*\%}/sU';
-                        if (preg_match_all($regexNestedFor, $matches[4], $matchesNestedFor)) {
+                        if (preg_match_all($regexNestedFor, $forContent, $matchesNestedFor)) {
                             foreach ($matchesNestedFor[1] as $matchNested) {
                                 $matchNested = intval($matchNested);
-                                $matches[4] = $this->parseFor($variables + $loopControl, $matchNested, $matchNested, $matches[4]);
+                                $forContent = $this->parseFor($variables + $loopControl, $matchNested, $matchNested, $forContent);
                             }
                         }
                         
                         $forVariables = $variables + $loopControl + ["loop" => $loop];
-                        $resultContent = $this->parseVariables($this->parseIf($matches[4], $forVariables), $forVariables);
+                        $resultContent = $this->parseVariables($this->parseIf($forContent, $forVariables), $forVariables);
                         if ($leftWhiteSpace == "-") {
                             $resultContent = ltrim($resultContent);
                         }

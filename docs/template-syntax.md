@@ -109,6 +109,69 @@ Whitespace control:
 {% endfor %}
 ```
 
+For loops with an else block (executed when the loop array is empty):
+
+```jinja
+{% for item in items %}
+    {{ item }}
+{% else %}
+    No items found.
+{% endfor %}
+```
+
+The `else` clause in a for loop provides a way to handle empty collections. When the collection being iterated is empty (has no items), the content inside the `else` block is rendered instead of the loop body. This is useful for displaying alternative content or messages when there are no items to process.
+
+Examples:
+
+```jinja
+{# Display a list of users or a message if no users exist #}
+<ul>
+    {% for user in users %}
+        <li>{{ user.name }}</li>
+    {% else %}
+        <li>No users found</li>
+    {% endfor %}
+</ul>
+
+{# Generate table rows or show "empty" message #}
+<table>
+    <tr><th>Name</th><th>Email</th></tr>
+    {% for contact in contacts %}
+        <tr>
+            <td>{{ contact.name }}</td>
+            <td>{{ contact.email }}</td>
+        </tr>
+    {% else %}
+        <tr><td colspan="2">Address book is empty</td></tr>
+    {% endfor %}
+</table>
+
+{# Conditionally show content when a list exists and has items #}
+{% for notification in notifications %}
+    <div class="alert">{{ notification.message }}</div>
+{% else %}
+    {# Nothing is rendered when notifications is empty #}
+{% endfor %}
+```
+
+Whitespace control can be used with for-else loops as well:
+
+```jinja
+{# Trim whitespace after the opening for tag #}
+{% for item in items -%}
+    {{ item }}
+{% else %}
+    No items
+{% endfor %}
+
+{# Trim whitespace before the else tag #}
+{% for item in items %}
+    {{ item }}
+{%- else %}
+    No items
+{% endfor %}
+```
+
 Loop variables:
 
 ```jinja
