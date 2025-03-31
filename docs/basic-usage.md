@@ -1,3 +1,7 @@
+---
+sidebar_position: 1
+---
+
 # Basic Usage
 
 This guide covers the essential basics of using PHP-Jinja.

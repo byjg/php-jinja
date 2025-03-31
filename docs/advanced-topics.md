@@ -1,3 +1,7 @@
+---
+sidebar_position: 7
+---
+
 # Advanced Topics
 
 This document covers advanced usage techniques for PHP-Jinja based strictly on what's available in the code.

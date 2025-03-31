@@ -1,3 +1,7 @@
+---
+sidebar_position: 4
+---
+
 # Undefined Variables
 
 PHP-Jinja provides different strategies for handling undefined variables in templates.

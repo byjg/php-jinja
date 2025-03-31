@@ -1,3 +1,7 @@
+---
+sidebar_position: 5
+---
+
 # Filters
 
 Filters in PHP-Jinja allow you to modify variables before they are rendered in templates.

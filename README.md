@@ -23,19 +23,6 @@ This library allows you to seamlessly process Jinja templates in PHP application
 - **Undefined Variable Handling**: Different strategies for handling undefined variables
 - **Expressions**: Support for mathematical operations, comparisons, and concatenation
 
-## Documentation
-
-The detailed documentation is organized as follows:
-
-1. [Basic Usage](docs/basic-usage.md)
-2. [Template Syntax](docs/template-syntax.md)
-3. [Loaders](docs/loaders.md)
-4. [Undefined Variables](docs/undefined-variables.md)
-5. [Filters](docs/filters.md)
-6. [Control Structures](docs/control-structures.md)
-7. [Advanced Topics](docs/advanced-topics.md)
-8. [API Reference](docs/api.md)
-
 ## Usage
 
 ```php
@@ -54,17 +41,19 @@ $variables = [
 ];
 echo $template->render($variables);
 ```
+## Documentation
 
-## Features Compared to Python Jinja2
+The detailed documentation is organized as follows:
 
-PHP-Jinja implements core Jinja2 features, but with some differences:
-
-- **Built-in Filters**: Only implements a subset of Jinja2 filters (`upper`, `lower`, `capitalize`, `trim`, `replace`, `length`, `default`, `join`, `split`)
-- **Custom Filters**: Currently does not support adding custom filters
-- **Template Inheritance**: Does not support template inheritance (`extends`, `block`, `include`)
-- **Extensions**: Does not support Jinja2 extensions system
-- **Autoescape**: Does not implement autoescaping for HTML output
-- **Macros**: Does not support macros
+1. [Basic Usage](docs/basic-usage.md)
+2. [Template Syntax](docs/template-syntax.md)
+3. [Loaders](docs/loaders.md)
+4. [Undefined Variables](docs/undefined-variables.md)
+5. [Filters](docs/filters.md)
+6. [Control Structures](docs/control-structures.md)
+7. [Advanced Topics](docs/advanced-topics.md)
+8. [API Reference](docs/api.md)
+9. [PHP Jinja vs Python Jinja2 Comparison](docs/comparison.md)
 
 ## Installation
 

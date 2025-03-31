@@ -1,3 +1,7 @@
+---
+sidebar_position: 2
+---
+
 # Template Syntax
 
 PHP-Jinja uses a syntax similar to the Python Jinja2 template engine. This document covers the core syntax elements.
@@ -88,6 +92,10 @@ Access variables using the double curly braces:
 ```jinja
 {% if condition %}
     Content rendered if condition is true
+{% elif condition2 %}
+    Content rendered if condition2 is true and previous conditions were false
+{% elif condition3 %}
+    Content rendered if condition3 is true and previous conditions were false
 {% else %}
     Content rendered if condition is false
 {% endif %}

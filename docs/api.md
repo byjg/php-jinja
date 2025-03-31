@@ -1,3 +1,7 @@
+---
+sidebar_position: 8
+---
+
 # PHP-Jinja API Reference
 
 This guide covers the PHP-Jinja API in detail.

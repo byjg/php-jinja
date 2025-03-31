@@ -1,3 +1,7 @@
+---
+sidebar_position: 3
+---
+
 # Template Loaders
 
 PHP-Jinja provides flexible ways to load templates from different sources.

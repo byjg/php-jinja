@@ -1,3 +1,7 @@
+---
+sidebar_position: 6
+---
+
 # Control Structures
 
 PHP-Jinja offers conditionals and loops for controlling template flow. This document provides in-depth information and examples.
@@ -94,12 +98,16 @@ The `loop` variable provides metadata about the current iteration:
 ```
 
 Available loop properties:
+- `loop.first`: True for first iteration
+- `loop.last`: True for last iteration
 - `loop.index`: 1-based counter (starts at 1)
 - `loop.index0`: 0-based counter (starts at 0)
-- `loop.first`: True for first iteration
-- `loop.last`: True for last iteration 
 - `loop.length`: Total number of items
-
+- `loop.revindex`: Reverse index (starts at loop.length)
+- `loop.revindex0`: Reverse index (starts at loop.length - 1)
+- `loop.even`: True if index is even
+- `loop.odd`: True if index is odd
+ 
 ### Conditional Display with Empty Collections
 
 ```jinja
