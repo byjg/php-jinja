@@ -195,7 +195,8 @@ class Template
             $inIndex = array_search(" in ", $array);
             if ($inIndex !== false) {
                 if (is_array($array[$inIndex+1])) {
-                    $array[$inIndex] = in_array($this->evaluateVariable($array[$inIndex-1], $variables), $array[$inIndex+1]) ? "true" : "false";
+                    $valueToCompare = $this->evaluateVariable($array[$inIndex-1], $variables);
+                    $array[$inIndex] = in_array($valueToCompare, (array)$array[$inIndex+1]) ? "true" : "false";
                     $array[$inIndex+1] = "";
                     $array[$inIndex-1] = "";
                 } elseif (is_string($array[$inIndex+1])) {
@@ -331,12 +332,72 @@ class Template
                 $condition = trim($matches[2]);
                 $rightWhiteSpace = trim($matches[3]);
                 $ifContent = $matches[4];
-                $ifParts = preg_split('/\{%\s*else\s*\%}/', $ifContent);
-                $return = "";
-                if ($this->evaluateVariable($condition, $variables)) {
-                    $return = $ifParts[0];
-                } else if (isset($ifParts[1])) {
-                    $return = $ifParts[1];
+                
+                // First split by 'else' to get the main parts
+                $mainParts = preg_split('/\{%\s*else\s*\%}/', $ifContent);
+                
+                // Check if there are 'elif' or 'elseif' tags in the first part
+                $elifPattern = '/\{%\s*(elif|elseif)\s+(.*?)\s*\%}/';
+                if (preg_match_all($elifPattern, $mainParts[0], $elifMatches, PREG_OFFSET_CAPTURE | PREG_PATTERN_ORDER)) {
+                    // Extract the if, elif and else parts
+                    $parts = [];
+                    $conditions = [];
+                    
+                    // Start with the 'if' condition
+                    $conditions[] = $condition;
+                    
+                    // Get positions of all elif tags
+                    $positions = array_column($elifMatches[0], 1);
+                    
+                    // Extract the 'if' content (until first elif)
+                    $parts[] = substr($mainParts[0], 0, $positions[0]);
+                    
+                    // Extract the 'elif' conditions
+                    foreach ($elifMatches[2] as $match) {
+                        $conditions[] = trim($match[0]);
+                    }
+                    
+                    // Extract content between 'elif' tags
+                    for ($j = 0; $j < count($positions) - 1; $j++) {
+                        $startPos = $positions[$j] + strlen($elifMatches[0][$j][0]);
+                        $length = $positions[$j+1] - $startPos;
+                        $parts[] = substr($mainParts[0], $startPos, $length);
+                    }
+                    
+                    // Add last 'elif' part (to the end)
+                    if (!empty($positions)) {
+                        $lastPos = end($positions) + strlen(end($elifMatches[0])[0]);
+                        $parts[] = substr($mainParts[0], $lastPos);
+                    }
+                    
+                    // Add 'else' part if it exists
+                    $elsePart = isset($mainParts[1]) ? $mainParts[1] : "";
+                    
+                    // Evaluate conditions one by one
+                    $return = "";
+                    $foundMatch = false;
+                    
+                    for ($j = 0; $j < count($conditions); $j++) {
+                        if ($this->evaluateVariable($conditions[$j], $variables)) {
+                            $return = $parts[$j];
+                            $foundMatch = true;
+                            break;
+                        }
+                    }
+                    
+                    // If no condition was met and there's an else part
+                    if (!$foundMatch && isset($mainParts[1])) {
+                        $return = $elsePart;
+                    }
+                } else {
+                    // Original behavior for if/else
+                    $ifParts = $mainParts;
+                    $return = "";
+                    if ($this->evaluateVariable($condition, $variables)) {
+                        $return = $ifParts[0];
+                    } else if (isset($ifParts[1])) {
+                        $return = $ifParts[1];
+                    }
                 }
 
                 if ($leftWhiteSpace == "-") {
