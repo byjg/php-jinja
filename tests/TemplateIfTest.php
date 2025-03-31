@@ -82,16 +82,21 @@ class TemplateIfTest extends TestCase
                 ['var1' => ['type' => 'test']], 
                 "true"
             ],
-//            'nested array check with parentheses' => [
-//                "{% if var1.type == 'test(1)' %}true{%else%}false{% endif %}",
-//                ['var1' => ['type' => 'test(1)']],
-//                "true"
-//            ],
-//            'nested array check with parentheses (2)' => [
-//                "{% if foo == '(some(test-->)(aa))' %}true{%else%}false{% endif %}",
-//                ['foo' => '(some(ffff)(aa))'],
-//                "true"
-//            ],
+            'nested array check with parentheses' => [
+                "{% if var1.type == 'test(1)' %}true{%else%}false{% endif %}",
+                ['var1' => ['type' => 'test(1)']],
+                "true"
+            ],
+            'nested array check with parentheses (2)' => [
+                "{% if foo == '(some(ffff)(aa))' %}true{%else%}false{% endif %}",
+                ['foo' => '(some(ffff)(aa))'],
+                "true"
+            ],
+            'nested array check with square brackets' => [
+                "{% if var1.type == 'test[1]' %}true{%else%}false{% endif %}",
+                ['var1' => ['type' => 'test[1]']],
+                "true"
+            ],
             'check var with special words' => [
                 "{% if foo == 'rock in the water' %}true{%else%}false{% endif %}",
                 ['foo' => 'rock in the water'],

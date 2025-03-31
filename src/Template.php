@@ -173,13 +173,24 @@ class Template
             return implode("", $array);
         }
 
+        // Use a workingContent to avoid modifying the original content
+        $workingContent = $trimmedContent;
+        // Step 2: Replace content inside quotes with placeholders
+        $quoteMap = [];
+        $workingContent = preg_replace_callback('/([\'"])(.*?)\1/', function($matches) use (&$quoteMap) {
+            $placeholder = '___QUOTED_' . count($quoteMap) . '___';
+            $quoteMap[$placeholder] = $matches[0];
+            return $placeholder;
+        }, $workingContent);
+
+
         // Handle literals (strings, numbers, boolean values)
-        if (!str_contains($trimmedContent, ' in ') && (preg_match('/^["\'].*["\']$/', $trimmedContent) || is_numeric($trimmedContent) || $trimmedContent == "true" || $trimmedContent == "false")) {
+        if (!str_contains($workingContent, ' in ') && (preg_match('/^["\'].*["\']$/', $trimmedContent) || is_numeric($trimmedContent) || $trimmedContent == "true" || $trimmedContent == "false")) {
             return $this->evaluateValue($content);
         }
 
         // Handle expressions in parentheses
-        if (preg_match('/\((.*)\)/', $content)) {
+        if (preg_match('/\((.*)\)/', $workingContent)) {
             $content = preg_replace_callback('/\((.*)\)/', function($matches) use ($variables) {
                 return $this->evaluateVariable($matches[1], $variables);
             }, $content);
@@ -205,68 +216,54 @@ class Template
         }
 
         // Handle expressions with operators (math, comparison, logic, 'in' check)
-        if (preg_match('/( in |<=|>=|==|!=|<>|\*\*|&&|\|\||[\+\-\/\*\%\<\>])/', $content) ) {
-            $quotedTextMap = [];
-            // Step 1: Temporarily replace content inside quotes with placeholders
-            $parsedContent = preg_replace_callback('/([\'"])(.*?)\1/', function($matches) use (&$quotedTextMap) {
-                static $i = 0;
-                $placeholder = "___QUOTED_TEXT_" . $i++ . "___";
-                $quotedTextMap[$placeholder] = $matches[0];
-                return $placeholder;
-            }, $content);
+        if (preg_match('/( in |<=|>=|==|!=|<>|\*\*|&&|\|\||[\+\-\/\*\%\<\>])/', $workingContent) ) {
+            // Step 2: Now split by operators
+            $array = preg_split('/( in |<=|>=|==|!=|<>|\*\*|&&|\|\||[\+\-\/\*\%\<\>])/', $workingContent, -1, PREG_SPLIT_DELIM_CAPTURE);
 
-            if (preg_match('/( in |<=|>=|==|!=|<>|\*\*|&&|\|\||[\+\-\/\*\%\<\>])/', $parsedContent))
-            {
-                // Step 2: Now split by operators
-                $array = preg_split('/( in |<=|>=|==|!=|<>|\*\*|&&|\|\||[\+\-\/\*\%\<\>])/', $parsedContent, -1, PREG_SPLIT_DELIM_CAPTURE);
-
-                // Step 3: Restore quoted text in the result
-                foreach ($array as &$part) {
-                    foreach ($quotedTextMap as $placeholder => $original) {
-                        $part = str_replace($placeholder, $original, $part);
-                    }
+            // Step 3: Restore quoted text in the result
+            foreach ($array as &$part) {
+                foreach ($quoteMap as $placeholder => $original) {
+                    $part = str_replace($placeholder, $original, $part);
                 }
-
-                // Evaluate each part of the expression
-                for ($i = 0; $i < count($array); $i=$i+2) {
-                    $array[$i] = trim($array[$i]);
-                    $array[$i] = $this->evaluateVariable($array[$i], $variables);
-                    if (is_string($array[$i]) && !str_starts_with($array[$i], "'")) {
-                        $array[$i] = "'" . $this->addSlashes($array[$i]) . "'";
-                    } else if (is_bool($array[$i])) {
-                        $array[$i] = $array[$i] ? "true" : "false";
-                    }
-                    // Special handling for array merging with + operator
-                    else if ($i > 0 && is_array($array[$i-2]) && is_array($array[$i]) && trim($array[$i-1]) == "+") {
-                        $array[$i-2] = json_encode(array_merge($array[$i-2], $array[$i]));
-                        $array[$i-1] = "";
-                        $array[$i] = "";
-                    }
-                }
-
-                // Special handling for 'in' operator
-                $inIndex = array_search(" in ", $array);
-                if ($inIndex !== false) {
-                    // Check if value exists in array
-                    if (is_array($array[$inIndex+1])) {
-                        $valueToCompare = $this->evaluateVariable($array[$inIndex-1], $variables);
-                        $array[$inIndex] = in_array($valueToCompare, (array)$array[$inIndex+1]) ? "true" : "false";
-                        $array[$inIndex+1] = "";
-                        $array[$inIndex-1] = "";
-                    }
-                    // Check if substring exists in string
-                    elseif (is_string($array[$inIndex+1])) {
-                        $array[$inIndex] = str_contains($this->evaluateVariable($array[$inIndex + 1], $variables), $this->evaluateVariable($array[$inIndex - 1], $variables)) ? "true" : "false";
-                        $array[$inIndex+1] = "";
-                        $array[$inIndex-1] = "";
-                    }
-                }
-                /** @var array $array */
-                $valueToEvaluate = implode(" ", $array);
-                return $this->evaluateValue($valueToEvaluate);
-            } else {
-                return $trimmedContent;
             }
+
+            // Evaluate each part of the expression
+            for ($i = 0; $i < count($array); $i=$i+2) {
+                $array[$i] = trim($array[$i]);
+                $array[$i] = $this->evaluateVariable($array[$i], $variables);
+                if (is_string($array[$i]) && !str_starts_with($array[$i], "'")) {
+                    $array[$i] = "'" . $this->addSlashes($array[$i]) . "'";
+                } else if (is_bool($array[$i])) {
+                    $array[$i] = $array[$i] ? "true" : "false";
+                }
+                // Special handling for array merging with + operator
+                else if ($i > 0 && is_array($array[$i-2]) && is_array($array[$i]) && trim($array[$i-1]) == "+") {
+                    $array[$i-2] = json_encode(array_merge($array[$i-2], $array[$i]));
+                    $array[$i-1] = "";
+                    $array[$i] = "";
+                }
+            }
+
+            // Special handling for 'in' operator
+            $inIndex = array_search(" in ", $array);
+            if ($inIndex !== false) {
+                // Check if value exists in array
+                if (is_array($array[$inIndex+1])) {
+                    $valueToCompare = $this->evaluateVariable($array[$inIndex-1], $variables);
+                    $array[$inIndex] = in_array($valueToCompare, (array)$array[$inIndex+1]) ? "true" : "false";
+                    $array[$inIndex+1] = "";
+                    $array[$inIndex-1] = "";
+                }
+                // Check if substring exists in string
+                elseif (is_string($array[$inIndex+1])) {
+                    $array[$inIndex] = str_contains($this->evaluateVariable($array[$inIndex + 1], $variables), $this->evaluateVariable($array[$inIndex - 1], $variables)) ? "true" : "false";
+                    $array[$inIndex+1] = "";
+                    $array[$inIndex-1] = "";
+                }
+            }
+            /** @var array $array */
+            $valueToEvaluate = implode(" ", $array);
+            return $this->evaluateValue($valueToEvaluate);
         }
 
         // Handle negation operator
