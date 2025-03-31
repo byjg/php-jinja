@@ -162,6 +162,66 @@ class TemplateIfTest extends TestCase
                 [], 
                 "else"
             ],
+            'logical and operator' => [
+                "{% if var1 == 'abc' and var2 == 123 %}true{% else %}false{% endif %}",
+                ['var1' => 'abc', 'var2' => 123],
+                "true"
+            ],
+            'logical and operator (false)' => [
+                "{% if var1 == 'abc' and var2 == 456 %}true{% else %}false{% endif %}",
+                ['var1' => 'abc', 'var2' => 123],
+                "false"
+            ],
+            'logical or operator' => [
+                "{% if var1 == 'abc' or var2 == 456 %}true{% else %}false{% endif %}",
+                ['var1' => 'abc', 'var2' => 123],
+                "true"
+            ],
+            'logical or operator (both false)' => [
+                "{% if var1 == 'xyz' or var2 == 456 %}true{% else %}false{% endif %}",
+                ['var1' => 'abc', 'var2' => 123],
+                "false"
+            ],
+            'complex expression with and/or' => [
+                "{% if (var1 == 'abc' and var2 == 123) or var3 == 'xyz' %}true{% else %}false{% endif %}",
+                ['var1' => 'abc', 'var2' => 123, 'var3' => 'abc'],
+                "true"
+            ],
+            'mix and/or with &&/||' => [
+                "{% if var1 == 'abc' and var2 == 123 || var3 == 'xyz' %}true{% else %}false{% endif %}",
+                ['var1' => 'abc', 'var2' => 456, 'var3' => 'xyz'],
+                "true"
+            ],
+            'precedence test 1' => [
+                "{% if var1 == 'abc' and (var2 == 123 || var3 == 'xyz') %}true{% else %}false{% endif %}",
+                ['var1' => 'abc', 'var2' => 456, 'var3' => 'xyz'],
+                "true"
+            ],
+            'precedence test 2' => [
+                "{% if var1 == 'abc' and var2 == 123 || var3 == 'abc' %}true{% else %}false{% endif %}",
+                ['var1' => 'abc', 'var2' => 456, 'var3' => 'abc'],
+                "true"
+            ],
+            'precedence test 3' => [
+                "{% if var1 == 'abc' and (var2 == 123 || var3 == 'efg') %}true{% else %}false{% endif %}",
+                ['var1' => 'abc', 'var2' => 456, 'var3' => 'efg'],
+                "true"
+            ],
+            'precedence test 4' => [
+                "{% if var1 == 'abc' and var2 == 456 and var3 == 'abc' %}true{% else %}false{% endif %}",
+                ['var1' => 'abc', 'var2' => 456, 'var3' => 'abc'],
+                "true"
+            ],
+            'precedence test 5' => [
+                "{% if var1 == 'abc' and var2 == 456 or var3 == 'xyz' %}true{% else %}false{% endif %}",
+                ['var1' => 'abc', 'var2' => 456, 'var3' => 'abc'],
+                "true"
+            ],
+            'precedence test 6' => [
+                "{% if var1 == 'abc' and var2 == 456 or var3 == 'xyz' %}true{% else %}false{% endif %}",
+                ['var1' => 'xyz', 'var2' => 456, 'var3' => 'abc'],
+                "false"
+            ],
         ];
     }
 

@@ -15,7 +15,7 @@ class OperatorEvaluator extends AbstractEvaluator
      */
     public function canEvaluate(string $content): bool
     {
-        return preg_match('/( in |<=|>=|==|!=|<>|\*\*|&&|\|\||[\+\-\/\*\%\<\>])/', $content) === 1;
+        return preg_match('/( in |<=|>=|==|!=|<>|\*\*|&&|\|\|| and | or |[\+\-\/\*\%\<\>])/', $content) === 1;
     }
     
     /**
@@ -33,7 +33,7 @@ class OperatorEvaluator extends AbstractEvaluator
         }, $content);
         
         // Split by operators
-        $array = preg_split('/( in |<=|>=|==|!=|<>|\*\*|&&|\|\||[\+\-\/\*\%\<\>])/', $workingContent, -1, PREG_SPLIT_DELIM_CAPTURE);
+        $array = preg_split('/( in |<=|>=|==|!=|<>|\*\*|&&|\|\|| and | or |[\+\-\/\*\%\<\>])/', $workingContent, -1, PREG_SPLIT_DELIM_CAPTURE);
         
         // Restore quoted text in the result
         foreach ($array as &$part) {
@@ -58,6 +58,16 @@ class OperatorEvaluator extends AbstractEvaluator
                 $array[$i-2] = json_encode(array_merge($array[$i-2], $array[$i]));
                 $array[$i-1] = "";
                 $array[$i] = "";
+            }
+        }
+        
+        // Convert 'and' to '&&' and 'or' to '||' for PHP evaluation
+        for ($i = 1; $i < count($array); $i = $i + 2) {
+            $operator = trim($array[$i]);
+            if ($operator === "and") {
+                $array[$i] = "&&";
+            } else if ($operator === "or") {
+                $array[$i] = "||";
             }
         }
         
