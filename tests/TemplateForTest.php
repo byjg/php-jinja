@@ -148,6 +148,67 @@ MSG_EOF;
         $this->assertEquals($expected, $template->render(['array' => ['val1', 'val2']]));
     }
 
+    public function testForWithBracketNotation(): void
+    {
+        // Test for loop with simple bracket notation
+        $template = new \ByJG\JinjaPhp\Template("{% for item in items[0] %}{{ item }}{% endfor %}");
+        $this->assertEquals("123", $template->render(['items' => [['1', '2', '3'], ['4', '5', '6']]]));
+        
+        // Test for loop with string key in bracket notation
+        $template = new \ByJG\JinjaPhp\Template("{% for item in data['items'] %}{{ item }}{% endfor %}");
+        $this->assertEquals("abc", $template->render(['data' => ['items' => ['a', 'b', 'c']]]));
+        
+        // Test for loop with multiple bracket notation
+        $template = new \ByJG\JinjaPhp\Template("{% for user in users['active'][0]['groups'] %}{{ user }}{% endfor %}");
+        $this->assertEquals("admineditor", $template->render([
+            'users' => [
+                'active' => [
+                    ['groups' => ['admin', 'editor']], 
+                    ['groups' => ['user']]
+                ]
+            ]
+        ]));
+        
+        // Test for loop with mixed dot and bracket notation
+        $template = new \ByJG\JinjaPhp\Template("{% for role in user.roles['primary'] %}{{ role }}{% endfor %}");
+        $this->assertEquals("admineditor", $template->render([
+            'user' => [
+                'roles' => [
+                    'primary' => ['admin', 'editor'],
+                    'secondary' => ['viewer']
+                ]
+            ]
+        ]));
+    }
+    
+    public function testForDictWithBracketNotation(): void
+    {
+        // Test for loop with key/value and bracket notation
+        $template = new \ByJG\JinjaPhp\Template("{% for key, value in data['users'] %}{{ key }}:{{ value }} {% endfor %}");
+        $this->assertEquals("0:John 1:Jane ", $template->render([
+            'data' => [
+                'users' => ['John', 'Jane']
+            ]
+        ]));
+        
+        // Test for loop with key/value and multiple bracket notation
+        $template = new \ByJG\JinjaPhp\Template("{% for key, value in config['site']['pages'] %}{{ key }}:{{ value }} {% endfor %}");
+        $this->assertEquals("home:Home about:About ", $template->render([
+            'config' => [
+                'site' => [
+                    'pages' => [
+                        'home' => 'Home',
+                        'about' => 'About'
+                    ]
+                ]
+            ]
+        ]));
+        
+        // Test accessing loop variable with bracket notation
+        $template = new \ByJG\JinjaPhp\Template("{% for item in items %}{{ loop['index'] }}:{{ item }} {% endfor %}");
+        $this->assertEquals("1:a 2:b 3:c ", $template->render(['items' => ['a', 'b', 'c']]));
+    }
+
 //     public function testForElse()
 //     {
 //         $templateString = <<<MSG_EOF

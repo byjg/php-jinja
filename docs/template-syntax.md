@@ -16,8 +16,11 @@ Access variables using the double curly braces:
 
 ```jinja
 {{ name }}                  <!-- Simple variable -->
-{{ user.name }}             <!-- Object/array property access -->
-{{ array.0 }}               <!-- Array index access -->
+{{ user.name }}             <!-- Object/array property access using dot notation -->
+{{ array.0 }}               <!-- Array index access using dot notation -->
+{{ array[0] }}              <!-- Array index access using bracket notation -->
+{{ user['name'] }}          <!-- Associative array access using bracket notation -->
+{{ nested['key'][0].prop }} <!-- Combined notation is also supported -->
 ```
 
 ## Expressions

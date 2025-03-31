@@ -106,9 +106,9 @@ class Template
     }
 
     /**
-     * Gets a variable from the variables array, supporting dot notation
+     * Gets a variable from the variables array, supporting dot notation and bracket notation
      *
-     * @param string $varName The variable name with dot notation
+     * @param string $varName The variable name with dot notation or bracket notation
      * @param array $variables The variables context
      * @param UndefinedInterface|null $undefined The strategy for handling undefined variables
      * @return mixed The variable value
@@ -116,6 +116,46 @@ class Template
      */
     public function getVar(string $varName, array $variables, ?UndefinedInterface $undefined = null): mixed 
     {
+        // Check for bracket notation like var[0] or var['key']
+        $bracketPattern = '/^([\w\d_-]+)\[(.*?)\](.*)/';
+        if (preg_match($bracketPattern, $varName, $matches)) {
+            $mainVar = $matches[1];
+            $index = trim($matches[2], "'\""); // Remove quotes if present
+            $remaining = $matches[3];
+            
+            if (isset($variables[$mainVar])) {
+                if (!isset($variables[$mainVar][$index])) {
+                    if (is_null($undefined)) {
+                        $undefined = $this->undefined;
+                    }
+                    return $undefined->render($index);
+                }
+                
+                $result = $variables[$mainVar][$index];
+                
+                // Handle any remaining path components (could be dot notation or more brackets)
+                if (!empty($remaining)) {
+                    // If the next character is a bracket, it's another bracket notation
+                    if (str_starts_with($remaining, '[')) {
+                        // Create a temporary array with the result as the first element
+                        return $this->getVar('temp' . $remaining, ['temp' => $result], $undefined);
+                    } 
+                    // If the next character is a dot, it's dot notation
+                    else if (str_starts_with($remaining, '.')) {
+                        return $this->getVar(substr($remaining, 1), is_array($result) ? $result : ['value' => $result], $undefined);
+                    }
+                }
+                
+                return $result;
+            } else {
+                if (is_null($undefined)) {
+                    $undefined = $this->undefined;
+                }
+                return $undefined->render($mainVar);
+            }
+        }
+        
+        // Handle dot notation (existing implementation)
         $varAr = explode('.', trim($varName));
         $varName = $varAr[0];
         if (isset($variables[$varName])) {

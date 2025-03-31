@@ -222,6 +222,37 @@ class TemplateIfTest extends TestCase
                 ['var1' => 'xyz', 'var2' => 456, 'var3' => 'abc'],
                 "false"
             ],
+            // Tests for bracket notation
+            'array access with bracket notation' => [
+                "{% if items[0] == 'first' %}true{% else %}false{% endif %}",
+                ['items' => ['first', 'second', 'third']],
+                "true"
+            ],
+            'array access with quoted key in bracket notation' => [
+                "{% if user['name'] == 'John' %}true{% else %}false{% endif %}",
+                ['user' => ['name' => 'John', 'age' => 30]],
+                "true"
+            ],
+            'nested array access with bracket notation' => [
+                "{% if users[0]['role'] == 'admin' %}true{% else %}false{% endif %}",
+                ['users' => [['role' => 'admin', 'name' => 'Admin'], ['role' => 'user', 'name' => 'User']]],
+                "true"
+            ],
+            'comparing multiple bracket notations' => [
+                "{% if users[0]['role'] == users[1]['role'] %}true{% else %}false{% endif %}",
+                ['users' => [['role' => 'admin'], ['role' => 'user']]],
+                "false"
+            ],
+            'mixed dot and bracket notation' => [
+                "{% if data.users[0].name == 'John' %}true{% else %}false{% endif %}",
+                ['data' => ['users' => [['name' => 'John'], ['name' => 'Jane']]]],
+                "true"
+            ],
+            'bracket notation with in operator' => [
+                "{% if 'admin' in user['roles'] %}true{% else %}false{% endif %}",
+                ['user' => ['roles' => ['admin', 'editor']]],
+                "true"
+            ],
         ];
     }
 
@@ -372,6 +403,18 @@ EOT;
 
             $this->assertEquals($expected, trim($result));
         }
+    }
+
+    public function testArrayAccessWithBracketNotation(): void
+    {
+        $template = new \ByJG\JinjaPhp\Template("{% if items[1] == 'second' %}Matched{% else %}Not matched{% endif %}");
+        $this->assertEquals("Matched", $template->render(['items' => ['first', 'second', 'third']]));
+        
+        $template = new \ByJG\JinjaPhp\Template("{% if nested['items'][0] == 'item1' %}Found{% else %}Not found{% endif %}");
+        $this->assertEquals("Found", $template->render(['nested' => ['items' => ['item1', 'item2']]]));
+        
+        $template = new \ByJG\JinjaPhp\Template("{% if deep['level1']['level2'][0] == 'value' %}Deep match{% endif %}");
+        $this->assertEquals("Deep match", $template->render(['deep' => ['level1' => ['level2' => ['value', 'other']]]]));
     }
 
 }
