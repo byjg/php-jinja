@@ -183,6 +183,33 @@ Loop variables:
     {{ loop.length }}  <!-- total number of items -->
 {% endfor %}
 ```
+### Nested For Loops
+
+For loops can be nested inside each other:
+
+```jinja
+{% for category in categories %}
+  <h2>{{ category.name }}</h2>
+  {% for product in category.products %}
+    <div>{{ product.name }}: ${{ product.price }}</div>
+  {% endfor %}
+{% endfor %}
+```
+
+For-else blocks can be used in nested structures, but with some limitations:
+
+```jinja
+{% for category in categories %}
+  <h2>{{ category.name }}</h2>
+  {% for product in category.products %}
+    <div>{{ product.name }}: ${{ product.price }}</div>
+  {% endfor %}
+{% else %}
+  <p>No categories available</p>
+{% endfor %}
+```
+
+> **Note**: Currently, the template engine supports `else` clauses in outer for loops but has limited support for `else` clauses in inner for loops. For best results, use for-else only on the outermost loop level.
 
 ## Comments
 

@@ -7,4 +7,4 @@ The following features are not implemented yet:
 - [x] Use `and` and `or` alongside with `&&` and `||` in logic operations.
 - [x] Implement elif in if statements.
 - [x] Implement else for loops.
-- [ ] Implement nested for loops.
+- [x] Implement nested for loops.

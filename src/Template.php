@@ -106,6 +106,19 @@ class Template
     }
 
     /**
+     * Get the appropriate undefined variable handler
+     *
+     * @param UndefinedInterface|null $undefined The provided undefined handler
+     * @return UndefinedInterface The undefined handler to use
+     */
+    protected function getUndefinedHandler(?UndefinedInterface $undefined = null): UndefinedInterface
+    {
+        // If $undefined is null, use the default undefined handler
+        // This ensures we never return null
+        return $undefined ?? $this->undefined ?? new StrictUndefined();
+    }
+
+    /**
      * Gets a variable from the variables array, supporting dot notation and bracket notation
      *
      * @param string $varName The variable name with dot notation or bracket notation
@@ -125,10 +138,7 @@ class Template
             
             if (isset($variables[$mainVar])) {
                 if (!isset($variables[$mainVar][$index])) {
-                    if (is_null($undefined)) {
-                        $undefined = $this->undefined;
-                    }
-                    return $undefined->render($index);
+                    return $this->getUndefinedHandler($undefined)->render($index);
                 }
                 
                 $result = $variables[$mainVar][$index];
@@ -148,10 +158,7 @@ class Template
                 
                 return $result;
             } else {
-                if (is_null($undefined)) {
-                    $undefined = $this->undefined;
-                }
-                return $undefined->render($mainVar);
+                return $this->getUndefinedHandler($undefined)->render($mainVar);
             }
         }
         
@@ -164,10 +171,7 @@ class Template
             }
             return $variables[$varName];
         } else {
-            if (is_null($undefined)) {
-                $undefined = $this->undefined;
-            }
-            return $undefined->render($varName);
+            return $this->getUndefinedHandler($undefined)->render($varName);
         }
     }
 
@@ -183,6 +187,35 @@ class Template
     protected function evaluateVariable(string $content, array $variables, UndefinedInterface|null $undefined = null): mixed
     {
         return $this->getEvaluatorChain()->evaluate($content, $variables, $undefined);
+    }
+
+    /**
+     * Find positions of start and end tags in a template
+     *
+     * @param string $result The template being processed
+     * @param string $startTag The start tag to find
+     * @param string $endTag The end tag to find
+     * @param int $iTag The tag number
+     * @return array An array with start and end tag positions and match data
+     */
+    protected function findTagPositions(string $result, string $startTag, string $endTag, int $iTag): array
+    {
+        $paddedTag = str_pad((string)$iTag, 2, "0", STR_PAD_LEFT);
+        $iPosStartTag = strpos($result, ' ' . $startTag . $paddedTag . " ");
+        
+        $matchesTmpStartTag = [];
+        $iPosStartTagAfter = preg_match('/\{%[+-]?\s*' . $startTag . ' /sU', $result, $matchesTmpStartTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
+        
+        $matchesTmpEndTag = [];
+        $iPosEndTag = preg_match('/\{%[+-]?\s*' . $endTag . '\s*[+-]?\%}/sU', $result, $matchesTmpEndTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
+        
+        return [
+            'iPosStartTag' => $iPosStartTag,
+            'iPosStartTagAfter' => $iPosStartTagAfter,
+            'iPosEndTag' => $iPosEndTag,
+            'matchesTmpStartTag' => $matchesTmpStartTag,
+            'matchesTmpEndTag' => $matchesTmpEndTag
+        ];
     }
 
     /**
@@ -217,18 +250,21 @@ class Template
         $result = $partialTemplate;
 
         // Close the closest {% $endTag %} tags before opening a new {% $startTag %} tag
+        $self = $this;
         $fixArray = /**
          * @return (mixed|null|string|string[])[]
          *
          * @psalm-return list{mixed, array<string>|mixed|null|string}
          */
-        function ($iEndTag, $endTag, $result) use ($startTag): array {
+        function ($iEndTag, $endTag, $result) use ($startTag, $self): array {
             while (!empty($iEndTag)) {
                 $i = array_pop($iEndTag);
 
-                $iPosStartTag = strpos($result, ' ' . $startTag . str_pad((string)$i, 2, "0", STR_PAD_LEFT) . " ");
-                $iPosStartTagAfter = preg_match('/\{%[+-]?\s*' . $startTag . ' /sU', $result, $matchesTmpStartTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
-                $iPosEndTag = preg_match('/\{%[+-]?\s*' .  $endTag . '\s*[+-]?\%}/sU', $result, $matchesTmpEndTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
+                $positions = $self->findTagPositions($result, $startTag, $endTag, $i);
+                $iPosStartTagAfter = $positions['iPosStartTagAfter'];
+                $iPosEndTag = $positions['iPosEndTag'];
+                $matchesTmpStartTag = $positions['matchesTmpStartTag'];
+                $matchesTmpEndTag = $positions['matchesTmpEndTag'];
             
                 if (($iPosStartTagAfter && $iPosEndTag) && $matchesTmpStartTag[0][1] < $matchesTmpEndTag[0][1]) {
                     $iEndTag[] = $i;
@@ -256,9 +292,11 @@ class Template
                 return "{%$left " . $startTag . str_pad((string)$iStartTag, 2, "0", STR_PAD_LEFT) . " ";
             }, $result, 1);
 
-            $iPosStartTag = strpos($result, ' ' . $startTag . str_pad((string)$iStartTag, 2, "0", STR_PAD_LEFT) . " ");
-            $iPosStartTagAfter = preg_match('/\{%[+-]?\s*' . $startTag . ' /sU', $result, $matchesTmpStartTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
-            $iPosEndTag = preg_match('/\{%[+-]?\s*' .  $endTag . '\s*[+-]?\%}/sU', $result, $matchesTmpEndTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
+            $positions = $this->findTagPositions($result, $startTag, $endTag, $iStartTag);
+            $iPosStartTagAfter = $positions['iPosStartTagAfter'];
+            $iPosEndTag = $positions['iPosEndTag'];
+            $matchesTmpStartTag = $positions['matchesTmpStartTag'];
+            $matchesTmpEndTag = $positions['matchesTmpEndTag'];
 
             if ($iPosStartTagAfter && $iPosEndTag && $matchesTmpEndTag[0][1] < $matchesTmpStartTag[0][1]) {
                 $result = preg_replace_callback('/\{%(?<left>[+-])?\s*' .  $endTag . '\s*(?<right>[+-])?\%}/sU', function ($matches) use ($iStartTag, $endTag) {
@@ -277,6 +315,25 @@ class Template
         list($iEndTag, $result) = $fixArray($iEndTag, $endTag, $result);
 
         return new PartialDocument($startTagCount, $result);
+    }
+
+    /**
+     * Apply whitespace control to content based on control flags
+     *
+     * @param string $content The content to process
+     * @param string|null $leftWhiteSpace The left whitespace control character
+     * @param string|null $rightWhiteSpace The right whitespace control character
+     * @return string The processed content
+     */
+    protected function applyWhitespaceControl(string $content, ?string $leftWhiteSpace = null, ?string $rightWhiteSpace = null): string
+    {
+        if ($leftWhiteSpace == "-") {
+            $content = ltrim($content);
+        }
+        if ($rightWhiteSpace == "-") {
+            $content = rtrim($content);
+        }
+        return $content;
     }
 
     /**
@@ -340,7 +397,7 @@ class Template
                     }
                     
                     // Add 'else' part if it exists
-                    $elsePart = isset($mainParts[1]) ? $mainParts[1] : "";
+                    $elsePart = $mainParts[1] ?? "";
                     
                     // Evaluate conditions one by one
                     $return = "";
@@ -369,16 +426,38 @@ class Template
                     }
                 }
 
-                if ($leftWhiteSpace == "-") {
-                    $return = ltrim($return);
-                }
-                if ($rightWhiteSpace == "-") {
-                    $return = rtrim($return);
-                }
-                return $return;
+                return $this->applyWhitespaceControl($return, $leftWhiteSpace, $rightWhiteSpace);
             }, $partial->result);
         }
         return $partial->result;
+    }
+
+    /**
+     * Process nested for loops in content
+     *
+     * @param string $content The content to process
+     * @param array $variables The variables context
+     * @param int|null $specificLoopId Process only this specific loop ID if provided
+     * @return string The processed content
+     * @throws TemplateParseException
+     */
+    protected function processNestedForLoops(string $content, array $variables, ?int $specificLoopId = null): string
+    {
+        $processedContent = $content;
+        $regexNestedFor = '/\{%\s*for(\d{2}).*\%}/sU';
+        
+        if (preg_match_all($regexNestedFor, $processedContent, $matchesNestedFor)) {
+            foreach ($matchesNestedFor[1] as $matchNested) {
+                $matchNested = intval($matchNested);
+                // Skip if we're looking for a specific loop ID and this isn't it
+                if ($specificLoopId !== null && $matchNested !== $specificLoopId) {
+                    continue;
+                }
+                $processedContent = $this->parseFor($variables, $matchNested, $matchNested, $processedContent);
+            }
+        }
+        
+        return $processedContent;
     }
 
     /**
@@ -419,21 +498,18 @@ class Template
                 // Check if there's an else block in the for loop
                 $elseParts = preg_split('/\{%\s*else\s*\%}/', $loopContent, 2);
                 $forContent = $elseParts[0];
-                $elseContent = isset($elseParts[1]) ? $elseParts[1] : "";
+                $elseContent = $elseParts[1] ?? "";
                 
                 if (preg_match($regexFor, $forExpression, $matchesFor)) {
                     $array = $this->evaluateVariable($matchesFor["array"], $variables);
                     
                     // If the array is empty and there's an else block, render the else content
                     if (empty($array) && !empty($elseContent)) {
-                        $elseResult = $this->parseVariables($this->parseIf($elseContent, $variables), $variables);
-                        if ($leftWhiteSpace == "-") {
-                            $elseResult = ltrim($elseResult);
-                        }
-                        if ($rightWhiteSpace == "-") {
-                            $elseResult = rtrim($elseResult);
-                        }
-                        return (string)$elseResult;
+                        // Process nested for loops in the else content first
+                        $processedElseContent = $this->processNestedForLoops($elseContent, $variables);
+                        
+                        $elseResult = $this->parseVariables($this->parseIf($processedElseContent, $variables), $variables);
+                        return $this->applyWhitespaceControl($elseResult, $leftWhiteSpace, $rightWhiteSpace);
                     }
                     
                     if (!empty($matchesFor["key2"])) {
@@ -444,42 +520,44 @@ class Template
                         $forValue = $matchesFor["key1"];
                     }
                     $index = 0;
-                    $loop = [];
+                    
                     foreach ($array as $key => $value) {
-                        $loop["first"] = $index == 0;
-                        $loop["last"] = $index == count($array) - 1;
-                        $loop["index"] = $index + 1;
-                        $loop["index0"] = $index;
-                        $loop["revindex"] = count($array) - $index;
-                        $loop["revindex0"] = count($array) - $index - 1;
-                        $loop["length"] = count($array);
-                        $loop["even"] = $index % 2 == 0;
-                        $loop["odd"] = $index % 2 == 1;
-
-                        $loopControl = [
-                            $forKey => $key, 
-                            $forValue => $value
+                        // Create loop variable for this iteration
+                        $loop = [
+                            "first" => $index == 0,
+                            "last" => $index == count($array) - 1,
+                            "index" => $index + 1,
+                            "index0" => $index,
+                            "revindex" => count($array) - $index,
+                            "revindex0" => count($array) - $index - 1,
+                            "length" => count($array),
+                            "even" => $index % 2 == 0,
+                            "odd" => $index % 2 == 1
                         ];
 
-                        // Find {% for00 %} and get the array with 00 pattern
-                        $regexNestedFor = '/\{%\s*for(\d{2}).*\%}/sU';
-                        if (preg_match_all($regexNestedFor, $forContent, $matchesNestedFor)) {
-                            foreach ($matchesNestedFor[1] as $matchNested) {
-                                $matchNested = intval($matchNested);
-                                $forContent = $this->parseFor($variables + $loopControl, $matchNested, $matchNested, $forContent);
-                            }
-                        }
+                        // Create the local variables for this iteration
+                        $loopVariables = [
+                            $forKey => $key,
+                            $forValue => $value,
+                            "loop" => $loop
+                        ];
                         
-                        $forVariables = $variables + $loopControl + ["loop" => $loop];
-                        $resultContent = $this->parseVariables($this->parseIf($forContent, $forVariables), $forVariables);
-                        if ($leftWhiteSpace == "-") {
-                            $resultContent = ltrim($resultContent);
-                        }
-                        if ($rightWhiteSpace == "-") {
-                            $resultContent = rtrim($resultContent);
-                        }
+                        // Combine with parent variables but give precedence to the loop variables
+                        $forVariables = array_merge($variables, $loopVariables);
+                        
+                        // Process the content for this iteration with nested for loops and if conditions
+                        $iterationContent = $forContent;
+                        
+                        // Process nested for loops with the current scope's variables
+                        $iterationContent = $this->processNestedForLoops($iterationContent, $forVariables);
+                        
+                        // Process if conditions and variables
+                        $resultContent = $this->parseVariables($this->parseIf($iterationContent, $forVariables), $forVariables);
+                        
+                        // Apply whitespace control
+                        $resultContent = $this->applyWhitespaceControl($resultContent, $leftWhiteSpace, $rightWhiteSpace);
+                        
                         $content .= $resultContent;
-                        
                         $index++;
                     }
                 }
