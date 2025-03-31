@@ -144,84 +144,154 @@ class Template
     /**
      * @throws TemplateParseException
      */
+    /**
+     * Evaluates the given content string based on template variables and syntax rules.
+     * This method handles variable interpolation, filter application, string concatenation,
+     * array definition, and expression evaluation.
+     *
+     * @param string $content The template content to evaluate
+     * @param array $variables The variables available in the template context
+     * @param UndefinedInterface|null $undefined The strategy for handling undefined variables
+     * @throws TemplateParseException If parsing or evaluation fails
+     * @return mixed The evaluated result (string, array, boolean, etc.)
+     */
     protected function evaluateVariable(string $content, array $variables, UndefinedInterface|null $undefined = null): mixed
     {
+        // Handle pipe filters (e.g. "var | upper | join(' ')")
         if (str_contains($content, ' | ')) {
             return $this->applyFilter(explode(" | ", $content), $variables);
-        } else if (preg_match('/\s*~\s*/', $content) ) {
+        }
+
+        // Handle string concatenation with ~ operator (e.g. "hello" ~ name ~ "!")
+        if (preg_match('/\s*~\s*/', $content) ) {
             $array = preg_split('/\s*~\s*/', $content);
             for ($i = 0; $i < count($array); $i++) {
                 $array[$i] = $this->evaluateVariable($array[$i], $variables);
             }
             return implode("", $array);
-        } else if (!str_contains(trim($content), ' in ') && (preg_match('/^["\'].*["\']$/', trim($content)) || is_numeric(trim($content)) || trim($content) == "true" || trim($content) == "false")) {
-            $valueToEvaluate = $content;
-        // parse variables inside parenthesis
-        } else if (preg_match('/\((.*)\)/', $content)) {
+        }
+
+        // Handle literals (strings, numbers, boolean values)
+        if (!str_contains(trim($content), ' in ') && (preg_match('/^["\'].*["\']$/', trim($content)) || is_numeric(trim($content)) || trim($content) == "true" || trim($content) == "false")) {
+            return $this->evaluateValue($content);
+        }
+
+        // Handle expressions in parentheses
+        if (preg_match('/\((.*)\)/', $content)) {
             $content = preg_replace_callback('/\((.*)\)/', function($matches) use ($variables) {
                 return $this->evaluateVariable($matches[1], $variables);
             }, $content);
-            $valueToEvaluate = $this->evaluateVariable($content, $variables);
-        // match content with the array representation
-        } else if (preg_match('/^\[.*\]$/', trim($content))) {
+            return $this->evaluateValue($this->evaluateVariable($content, $variables));
+        }
+
+
+        // Handle array declarations with brackets (e.g. [1, 2, 'key': 'value'])
+        if (preg_match('/^\[.*\]$/', trim($content))) {
             $array = preg_split('/\s*,\s*/', trim(trim($content), "[]"));
             $retArray = [];
             for ($i = 0; $i < count($array); $i++) {
                 $arData = preg_split('/\s*:\s*/', $array[$i]);
+                // Handle key:value pairs
                 if (count($arData) == 2) {
                     $retArray[trim($arData[0], "\"'")] = $this->evaluateVariable($arData[1], $variables);
-                } else {
+                }
+                // Handle regular array items
+                else {
                     $retArray[$i] = $this->evaluateVariable($array[$i], $variables);
                 }
             }
             return $retArray;
-        } else if (preg_match('/( in |<=|>=|==|!=|<>|\*\*|&&|\|\||[\+\-\/\*\%\<\>])/', $content) ) {
-            $array = preg_split('/( in |<=|>=|==|!=|<>|\*\*|&&|\|\||[\+\-\/\*\%\<\>])/', $content, -1, PREG_SPLIT_DELIM_CAPTURE);
-
-            for ($i = 0; $i < count($array); $i=$i+2) {
-                $array[$i] = $this->evaluateVariable($array[$i], $variables);
-                if (is_string($array[$i])) {
-                    $array[$i] = "'" . $this->addSlashes($array[$i]) . "'";
-                } else if (is_bool($array[$i])) {
-                    $array[$i] = $array[$i] ? "true" : "false";
-                } else if ($i > 0 && is_array($array[$i-2]) && is_array($array[$i]) && trim($array[$i-1]) == "+") {
-                    $array[$i-2] = json_encode(array_merge($array[$i-2], $array[$i]));
-                    $array[$i-1] = "";
-                    $array[$i] = "";
-                }
-            }
-
-            // Search for the operator `in`
-            $inIndex = array_search(" in ", $array);
-            if ($inIndex !== false) {
-                if (is_array($array[$inIndex+1])) {
-                    $valueToCompare = $this->evaluateVariable($array[$inIndex-1], $variables);
-                    $array[$inIndex] = in_array($valueToCompare, (array)$array[$inIndex+1]) ? "true" : "false";
-                    $array[$inIndex+1] = "";
-                    $array[$inIndex-1] = "";
-                } elseif (is_string($array[$inIndex+1])) {
-                    $array[$inIndex] = str_contains($this->evaluateVariable($array[$inIndex + 1], $variables), $this->evaluateVariable($array[$inIndex - 1], $variables)) ? "true" : "false";
-                    $array[$inIndex+1] = "";
-                    $array[$inIndex-1] = "";
-                }
-            }
-            /** @var array $array */
-            $valueToEvaluate = implode(" ", $array);
-        } else if (str_starts_with(trim($content), "!")) {
-            $valueToEvaluate = $content;
-
-        } else {
-            $var = $this->getVar($content, $variables, $undefined);
-            if (is_array($var)) {
-                return $var;
-            }
-            $valueToEvaluate = "'" . $this->addSlashes($var) . "'";
         }
 
+        // Handle expressions with operators (math, comparison, logic, 'in' check)
+        if (preg_match('/( in |<=|>=|==|!=|<>|\*\*|&&|\|\||[\+\-\/\*\%\<\>])/', $content) ) {
+            $quotedTextMap = [];
+            // Step 1: Temporarily replace content inside quotes with placeholders
+            $parsedContent = preg_replace_callback('/([\'"])(.*?)\1/', function($matches) use (&$quotedTextMap) {
+                static $i = 0;
+                $placeholder = "___QUOTED_TEXT_" . $i++ . "___";
+                $quotedTextMap[$placeholder] = $matches[0];
+                return $placeholder;
+            }, $content);
+
+            if (preg_match('/( in |<=|>=|==|!=|<>|\*\*|&&|\|\||[\+\-\/\*\%\<\>])/', $parsedContent))
+            {
+                // Step 2: Now split by operators
+                $array = preg_split('/( in |<=|>=|==|!=|<>|\*\*|&&|\|\||[\+\-\/\*\%\<\>])/', $parsedContent, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+                // Step 3: Restore quoted text in the result
+                foreach ($array as &$part) {
+                    foreach ($quotedTextMap as $placeholder => $original) {
+                        $part = str_replace($placeholder, $original, $part);
+                    }
+                }
+
+                // Evaluate each part of the expression
+                for ($i = 0; $i < count($array); $i=$i+2) {
+                    $array[$i] = trim($array[$i]);
+                    $array[$i] = $this->evaluateVariable($array[$i], $variables);
+                    if (is_string($array[$i]) && !str_starts_with($array[$i], "'")) {
+                        $array[$i] = "'" . $this->addSlashes($array[$i]) . "'";
+                    } else if (is_bool($array[$i])) {
+                        $array[$i] = $array[$i] ? "true" : "false";
+                    }
+                    // Special handling for array merging with + operator
+                    else if ($i > 0 && is_array($array[$i-2]) && is_array($array[$i]) && trim($array[$i-1]) == "+") {
+                        $array[$i-2] = json_encode(array_merge($array[$i-2], $array[$i]));
+                        $array[$i-1] = "";
+                        $array[$i] = "";
+                    }
+                }
+
+                // Special handling for 'in' operator
+                $inIndex = array_search(" in ", $array);
+                if ($inIndex !== false) {
+                    // Check if value exists in array
+                    if (is_array($array[$inIndex+1])) {
+                        $valueToCompare = $this->evaluateVariable($array[$inIndex-1], $variables);
+                        $array[$inIndex] = in_array($valueToCompare, (array)$array[$inIndex+1]) ? "true" : "false";
+                        $array[$inIndex+1] = "";
+                        $array[$inIndex-1] = "";
+                    }
+                    // Check if substring exists in string
+                    elseif (is_string($array[$inIndex+1])) {
+                        $array[$inIndex] = str_contains($this->evaluateVariable($array[$inIndex + 1], $variables), $this->evaluateVariable($array[$inIndex - 1], $variables)) ? "true" : "false";
+                        $array[$inIndex+1] = "";
+                        $array[$inIndex-1] = "";
+                    }
+                }
+                /** @var array $array */
+                $valueToEvaluate = implode(" ", $array);
+                return $this->evaluateValue($valueToEvaluate);
+            } else {
+                return trim($content);
+            }
+        }
+
+        // Handle negation operator
+        if (str_starts_with(trim($content), "!")) {
+            return $this->evaluateValue($content);
+        }
+
+        // Handle variable access (treats as a string)
+        $var = $this->getVar($content, $variables, $undefined);
+        if (is_array($var)) {
+            return $var;
+        }
+        $valueToEvaluate = "'" . $this->addSlashes($var) . "'";
+
+        return $this->evaluateValue($valueToEvaluate);
+    }
+
+    protected function evaluateValue(mixed $valueToEvaluate): mixed
+    {
+        // Return boolean values directly
         if (is_bool($valueToEvaluate)) {
             return $valueToEvaluate;
         }
-    
+
+        // Use PHP's eval function to evaluate the final expression
+        // This handles all the math, boolean logic, and other expressions
         $evalResult = "";
         eval("\$evalResult = $valueToEvaluate;");
         return $evalResult;

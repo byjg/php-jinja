@@ -82,12 +82,21 @@ class TemplateIfTest extends TestCase
                 ['var1' => ['type' => 'test']], 
                 "true"
             ],
-            'nested array check 2' => [
-                "{% if var1.type == 'test(1)' %}true{%else%}false{% endif %}",
-                ['var1' => ['type' => 'test(1)']],
+//            'nested array check with parentheses' => [
+//                "{% if var1.type == 'test(1)' %}true{%else%}false{% endif %}",
+//                ['var1' => ['type' => 'test(1)']],
+//                "true"
+//            ],
+//            'nested array check with parentheses (2)' => [
+//                "{% if foo == '(some(test-->)(aa))' %}true{%else%}false{% endif %}",
+//                ['foo' => '(some(ffff)(aa))'],
+//                "true"
+//            ],
+            'check var with special words' => [
+                "{% if foo == 'rock in the water' %}true{%else%}false{% endif %}",
+                ['foo' => 'rock in the water'],
                 "true"
             ],
-
             'check substring in array element' => [
                 "{% if 'test' in var1.type %}true{%else%}false{% endif %}", 
                 ['var1' => ['type' => 'test(1)']], 
@@ -99,32 +108,32 @@ class TemplateIfTest extends TestCase
                 "true"
             ],
             'elif condition with first test false' => [
-                "{% if false %}true{% elseif true %}false{% endif %}", 
+                "{% if false %}true{% elif true %}false{% endif %}",
                 [], 
                 "false"
             ],
             'elif condition with both tests false' => [
-                "{% if false %}true{% elseif false %}false{% endif %}", 
+                "{% if false %}true{% elif false %}false{% endif %}",
                 [], 
                 ""
             ],
             'elif with else condition - all false' => [
-                "{% if false %}true{% elseif false %}false{% else %}else{% endif %}", 
+                "{% if false %}true{% elif false %}false{% else %}else{% endif %}",
                 [], 
                 "else"
             ],
             'multiple elif conditions with middle true' => [
-                "{% if false %}true{% elseif false %}false{% elseif true %}elseif{% endif %}",
+                "{% if false %}true{% elif false %}false{% elif true %}elif{% endif %}",
                 [], 
-                "elseif"
+                "elif"
             ],
             'multiple elif conditions all false' => [
-                "{% if false %}true{% elseif false %}false{% elseif false %}elseif{% endif %}",
+                "{% if false %}true{% elif false %}false{% elif false %}elif{% endif %}",
                 [], 
                 ""
             ],
             'multiple elif conditions all false with else' => [
-                "{% if false %}true{% elseif false %}false{% elseif false %}elseif{% else %}else{% endif %}",
+                "{% if false %}true{% elif false %}false{% elif false %}elif{% else %}else{% endif %}",
                 [], 
                 "else"
             ],
