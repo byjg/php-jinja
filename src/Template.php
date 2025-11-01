@@ -470,7 +470,7 @@ class Template
      * @return string The parsed template
      * @throws TemplateParseException If parsing fails
      */
-    protected function parseFor(array $variables, int $forStart = 1, ?int $forCount = null, string $partialTemplate = null): string
+    protected function parseFor(array $variables, int $forStart = 1, ?int $forCount = null, ?string $partialTemplate = null): string
     {
         if (empty($partialTemplate)) {
             $partialTemplate = $this->template;

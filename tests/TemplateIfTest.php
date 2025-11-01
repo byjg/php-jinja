@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class TemplateIfTest extends TestCase
@@ -256,9 +257,7 @@ class TemplateIfTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider ifConditionsProvider
-     */
+    #[DataProvider('ifConditionsProvider')]
     public function testIf(string $template, array $variables, string $expected): void
     {
         $template = new \ByJG\JinjaPhp\Template($template);
