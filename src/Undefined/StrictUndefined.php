@@ -11,6 +11,7 @@ class StrictUndefined implements UndefinedInterface
     /**
      * @throws TemplateParseException
      */
+    #[\Override]
     public function render(string $varName): string
         {
             throw new TemplateParseException("Variable $varName not defined.");

@@ -1,0 +1,228 @@
+---
+sidebar_position: 2
+---
+
+# Template Syntax
+
+PHP-Jinja uses a syntax similar to the Python Jinja2 template engine. This document covers the core syntax elements.
+
+## Delimiters
+
+PHP-Jinja uses three types of delimiters:
+
+- `{{ ... }}`: Output expressions - prints the result of an expression
+- `{% ... %}`: Control structures - for loops, if statements, etc.
+- `{# ... #}`: Comments - not rendered in the output
+
+## Variables
+
+Access variables using the double curly braces:
+
+```jinja
+{{ name }}                  <!-- Simple variable -->
+{{ user.name }}             <!-- Object/array property access using dot notation -->
+{{ array.0 }}               <!-- Array index access using dot notation -->
+{{ array[0] }}              <!-- Array index access using bracket notation -->
+{{ user['name'] }}          <!-- Associative array access using bracket notation -->
+{{ nested['key'][0].prop }} <!-- Combined notation is also supported -->
+```
+
+## Expressions
+
+### Literals
+
+```jinja
+{{ 42 }}                      <!-- Integer -->
+{{ 3.14 }}                    <!-- Float -->
+{{ "hello" }} or {{ 'hello' }} <!-- Strings -->
+{{ true }}, {{ false }}       <!-- Booleans -->
+{{ [1, 2, 3] }}               <!-- Array -->
+{{ ['a': 1, 'b': 2] }}        <!-- Associative array -->
+```
+
+### Operators
+
+#### Mathematical
+
+```jinja
+{{ 1 + 2 }}    <!-- Addition: 3 -->
+{{ 5 - 2 }}    <!-- Subtraction: 3 -->
+{{ 2 * 3 }}    <!-- Multiplication: 6 -->
+{{ 6 / 2 }}    <!-- Division: 3 -->
+{{ 7 % 3 }}    <!-- Modulo: 1 -->
+{{ 2 ** 3 }}   <!-- Exponentiation: 8 -->
+```
+
+#### String Concatenation
+
+```jinja
+{{ "Hello" ~ " " ~ "World" }}  <!-- "Hello World" -->
+```
+
+#### Comparison
+
+```jinja
+{{ 1 == 1 }}   <!-- Equal: true -->
+{{ 1 != 2 }}   <!-- Not equal: true -->
+{{ 1 < 2 }}    <!-- Less than: true -->
+{{ 2 > 1 }}    <!-- Greater than: true -->
+{{ 1 <= 1 }}   <!-- Less than or equal: true -->
+{{ 1 >= 1 }}   <!-- Greater than or equal: true -->
+```
+
+#### Logical
+
+```jinja
+{{ true && false }}  <!-- Logical AND: false -->
+{{ true || false }}  <!-- Logical OR: true -->
+{{ !true }}          <!-- Logical NOT: false -->
+```
+
+#### Membership Test
+
+```jinja
+{{ "a" in "abc" }}      <!-- String contains: true -->
+{{ 1 in [1, 2, 3] }}    <!-- Array contains: true -->
+```
+
+## Control Structures
+
+### Conditionals
+
+```jinja
+{% if condition %}
+    Content rendered if condition is true
+{% elif condition2 %}
+    Content rendered if condition2 is true and previous conditions were false
+{% elif condition3 %}
+    Content rendered if condition3 is true and previous conditions were false
+{% else %}
+    Content rendered if condition is false
+{% endif %}
+```
+
+Whitespace control:
+
+```jinja
+{%- if condition -%}
+    Content without whitespace before or after
+{%- endif -%}
+```
+
+### Loops
+
+```jinja
+{% for item in items %}
+    {{ item }}
+{% endfor %}
+```
+
+For loops with an else block (executed when the loop array is empty):
+
+```jinja
+{% for item in items %}
+    {{ item }}
+{% else %}
+    No items found.
+{% endfor %}
+```
+
+The `else` clause in a for loop provides a way to handle empty collections. When the collection being iterated is empty (has no items), the content inside the `else` block is rendered instead of the loop body. This is useful for displaying alternative content or messages when there are no items to process.
+
+Examples:
+
+```jinja
+{# Display a list of users or a message if no users exist #}
+<ul>
+    {% for user in users %}
+        <li>{{ user.name }}</li>
+    {% else %}
+        <li>No users found</li>
+    {% endfor %}
+</ul>
+
+{# Generate table rows or show "empty" message #}
+<table>
+    <tr><th>Name</th><th>Email</th></tr>
+    {% for contact in contacts %}
+        <tr>
+            <td>{{ contact.name }}</td>
+            <td>{{ contact.email }}</td>
+        </tr>
+    {% else %}
+        <tr><td colspan="2">Address book is empty</td></tr>
+    {% endfor %}
+</table>
+
+{# Conditionally show content when a list exists and has items #}
+{% for notification in notifications %}
+    <div class="alert">{{ notification.message }}</div>
+{% else %}
+    {# Nothing is rendered when notifications is empty #}
+{% endfor %}
+```
+
+Whitespace control can be used with for-else loops as well:
+
+```jinja
+{# Trim whitespace after the opening for tag #}
+{% for item in items -%}
+    {{ item }}
+{% else %}
+    No items
+{% endfor %}
+
+{# Trim whitespace before the else tag #}
+{% for item in items %}
+    {{ item }}
+{%- else %}
+    No items
+{% endfor %}
+```
+
+Loop variables:
+
+```jinja
+{% for item in items %}
+    {{ loop.index }}   <!-- 1-based index -->
+    {{ loop.index0 }}  <!-- 0-based index -->
+    {{ loop.first }}   <!-- true if first iteration -->
+    {{ loop.last }}    <!-- true if last iteration -->
+    {{ loop.length }}  <!-- total number of items -->
+{% endfor %}
+```
+### Nested For Loops
+
+For loops can be nested inside each other:
+
+```jinja
+{% for category in categories %}
+  <h2>{{ category.name }}</h2>
+  {% for product in category.products %}
+    <div>{{ product.name }}: ${{ product.price }}</div>
+  {% endfor %}
+{% endfor %}
+```
+
+For-else blocks can be used in nested structures, but with some limitations:
+
+```jinja
+{% for category in categories %}
+  <h2>{{ category.name }}</h2>
+  {% for product in category.products %}
+    <div>{{ product.name }}: ${{ product.price }}</div>
+  {% endfor %}
+{% else %}
+  <p>No categories available</p>
+{% endfor %}
+```
+
+> **Note**: Currently, the template engine supports `else` clauses in outer for loops but has limited support for `else` clauses in inner for loops. For best results, use for-else only on the outermost loop level.
+
+## Comments
+
+Add comments that are not rendered in the output:
+
+```jinja
+{# This is a comment that won't appear in the output #}
+``` 

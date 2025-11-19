@@ -2,25 +2,62 @@
 
 namespace ByJG\JinjaPhp;
 
+use ByJG\JinjaPhp\Evaluator\ArrayEvaluator;
+use ByJG\JinjaPhp\Evaluator\ConcatenationEvaluator;
+use ByJG\JinjaPhp\Evaluator\EvaluatorChain;
+use ByJG\JinjaPhp\Evaluator\FilterEvaluator;
+use ByJG\JinjaPhp\Evaluator\LiteralEvaluator;
+use ByJG\JinjaPhp\Evaluator\OperatorEvaluator;
+use ByJG\JinjaPhp\Evaluator\ParenthesizedEvaluator;
+use ByJG\JinjaPhp\Evaluator\VariableEvaluator;
 use ByJG\JinjaPhp\Exception\TemplateParseException;
 use ByJG\JinjaPhp\Internal\PartialDocument;
 use ByJG\JinjaPhp\Undefined\DefaultUndefined;
 use ByJG\JinjaPhp\Undefined\StrictUndefined;
 use ByJG\JinjaPhp\Undefined\UndefinedInterface;
 
+/**
+ * Template engine with Jinja-like syntax
+ */
 class Template
 {
-
+    /**
+     * @var string The template content
+     */
     protected string $template;
+    
+    /**
+     * @var UndefinedInterface|null Strategy for handling undefined variables
+     */
     protected UndefinedInterface|null $undefined = null;
+    
+    /**
+     * @var array Template variables
+     */
     protected array $variables = [];
+    
+    /**
+     * @var EvaluatorChain|null The evaluator chain
+     */
+    protected ?EvaluatorChain $evaluatorChain = null;
 
+    /**
+     * Creates a new template instance
+     *
+     * @param string $template The template content
+     */
     public function __construct(string $template)
     {
         $this->template = $template;
         $this->undefined = new StrictUndefined();
     }
 
+    /**
+     * Sets the undefined variable handler
+     *
+     * @param UndefinedInterface $undefined The undefined handler
+     * @return static
+     */
     public function withUndefined(UndefinedInterface $undefined): static
     {
         $this->undefined = $undefined;
@@ -28,7 +65,34 @@ class Template
     }
 
     /**
-     * @throws TemplateParseException
+     * Gets the evaluator chain, creating it if necessary
+     *
+     * @return EvaluatorChain The evaluator chain
+     */
+    protected function getEvaluatorChain(): EvaluatorChain
+    {
+        if ($this->evaluatorChain === null) {
+            $this->evaluatorChain = new EvaluatorChain();
+            
+            // Add evaluators in order of specificity (most specific first)
+            $this->evaluatorChain->addEvaluator(new FilterEvaluator($this->evaluatorChain, $this));
+            $this->evaluatorChain->addEvaluator(new ConcatenationEvaluator($this->evaluatorChain));
+            $this->evaluatorChain->addEvaluator(new LiteralEvaluator($this->evaluatorChain));
+            $this->evaluatorChain->addEvaluator(new ParenthesizedEvaluator($this->evaluatorChain));
+            $this->evaluatorChain->addEvaluator(new ArrayEvaluator($this->evaluatorChain));
+            $this->evaluatorChain->addEvaluator(new OperatorEvaluator($this->evaluatorChain));
+            $this->evaluatorChain->addEvaluator(new VariableEvaluator($this->evaluatorChain, $this));
+        }
+        
+        return $this->evaluatorChain;
+    }
+
+    /**
+     * Renders the template with the given variables
+     *
+     * @param array $variables The variables to use in the template
+     * @return string|array|null The rendered template
+     * @throws TemplateParseException If an error occurs during rendering
      */
     public function render(array $variables = []): string|array|null
     {
@@ -42,9 +106,63 @@ class Template
     }
 
     /**
-     * @throws TemplateParseException
+     * Get the appropriate undefined variable handler
+     *
+     * @param UndefinedInterface|null $undefined The provided undefined handler
+     * @return UndefinedInterface The undefined handler to use
      */
-    protected function getVar(string $varName, array $variables, ?UndefinedInterface $undefined = null) {
+    protected function getUndefinedHandler(?UndefinedInterface $undefined = null): UndefinedInterface
+    {
+        // If $undefined is null, use the default undefined handler
+        // This ensures we never return null
+        return $undefined ?? $this->undefined ?? new StrictUndefined();
+    }
+
+    /**
+     * Gets a variable from the variables array, supporting dot notation and bracket notation
+     *
+     * @param string $varName The variable name with dot notation or bracket notation
+     * @param array $variables The variables context
+     * @param UndefinedInterface|null $undefined The strategy for handling undefined variables
+     * @return mixed The variable value
+     * @throws TemplateParseException If an error occurs during variable resolution
+     */
+    public function getVar(string $varName, array $variables, ?UndefinedInterface $undefined = null): mixed 
+    {
+        // Check for bracket notation like var[0] or var['key']
+        $bracketPattern = '/^([\w\d_-]+)\[(.*?)\](.*)/';
+        if (preg_match($bracketPattern, $varName, $matches)) {
+            $mainVar = $matches[1];
+            $index = trim($matches[2], "'\""); // Remove quotes if present
+            $remaining = $matches[3];
+            
+            if (isset($variables[$mainVar])) {
+                if (!isset($variables[$mainVar][$index])) {
+                    return $this->getUndefinedHandler($undefined)->render($index);
+                }
+                
+                $result = $variables[$mainVar][$index];
+                
+                // Handle any remaining path components (could be dot notation or more brackets)
+                if (!empty($remaining)) {
+                    // If the next character is a bracket, it's another bracket notation
+                    if (str_starts_with($remaining, '[')) {
+                        // Create a temporary array with the result as the first element
+                        return $this->getVar('temp' . $remaining, ['temp' => $result], $undefined);
+                    } 
+                    // If the next character is a dot, it's dot notation
+                    else if (str_starts_with($remaining, '.')) {
+                        return $this->getVar(substr($remaining, 1), is_array($result) ? $result : ['value' => $result], $undefined);
+                    }
+                }
+                
+                return $result;
+            } else {
+                return $this->getUndefinedHandler($undefined)->render($mainVar);
+            }
+        }
+        
+        // Handle dot notation (existing implementation)
         $varAr = explode('.', trim($varName));
         $varName = $varAr[0];
         if (isset($variables[$varName])) {
@@ -53,181 +171,61 @@ class Template
             }
             return $variables[$varName];
         } else {
-            if (is_null($undefined)) {
-                $undefined = $this->undefined;
-            }
-            return $undefined->render($varName);
+            return $this->getUndefinedHandler($undefined)->render($varName);
         }
-    }
-    
-    protected function extractFilterValues(string $filterCommand): array
-    {
-        $regex = '/([a-zA-Z0-9_-]+)\s*(\((.*)\))?/';
-        preg_match($regex, $filterCommand, $matches);
-        $filterName = $matches[1];
-        // Split the parameters by comma, but not if it is inside quotes
-        if (isset($matches[3])) {
-            // get filter parameters without parenthesis and delimited by , (comma) not (inside quotes or single quotes)
-            // $filterParams = preg_split('/(?<=[^\'"]),(?=[^\'"])/', $matches[3]);
-            if (preg_match_all("~'[^']++'|\([^)]++\)|[^,]++~", $matches[3], $filterParams)) {
-                $filterParams = $filterParams[0];
-            } else {
-                $filterParams = [];
-            }
-        } else {
-            $filterParams = [];
-        }
-        return [$filterName, $filterParams];
     }
 
     /**
-     * @throws TemplateParseException
-     */
-    protected function applyFilter(array $values, array $variables): mixed
-    {
-        $content = trim(array_shift($values)) ?? "";
-        $firstTime = true;
-        do {
-            $filterCommand = $this->extractFilterValues(array_shift($values));
-            if ($firstTime) {
-                $firstTime = false;
-                if ($filterCommand[0] == "default") {
-                    $default = isset($filterCommand[1][0]) ? $this->evaluateVariable($filterCommand[1][0], $variables) : "";
-                    $content = $this->evaluateVariable($content, $variables, new DefaultUndefined($default));
-                    continue;
-                } else {
-                    $content = $this->evaluateVariable($content, $variables);
-                }
-            }
-
-            switch ($filterCommand[0]) {
-                case "upper":
-                    $content = strtoupper($content);
-                    break;
-                case "lower":
-                    $content = strtolower($content);
-                    break;
-                case "join":
-                    $delimiter = isset($filterCommand[1][0]) ? $this->evaluateVariable($filterCommand[1][0], $variables) : "";
-                    $content = implode($delimiter, (array)$content);
-                    break;
-                case "replace":
-                    $search = isset($filterCommand[1][0]) ? $this->evaluateVariable($filterCommand[1][0], $variables) : "";
-                    $replace = isset($filterCommand[1][1]) ? $this->evaluateVariable($filterCommand[1][1], $variables) : "";
-                    $content = str_replace($search, $replace, $content);
-                    break;
-                case "split":
-                    $delimiter = isset($filterCommand[1][0]) ? $this->evaluateVariable($filterCommand[1][0], $variables) : "";
-                    $content = explode($delimiter, $content);
-                    break;
-                case "trim":
-                    $chars = isset($filterCommand[1][0]) ? $this->evaluateVariable($filterCommand[1][0], $variables) : null;
-                    $content = is_null($chars) ? trim($content) : trim($content, $chars);
-                    break;
-                case "length":
-                    /** @var array|string $content */
-                    $content = is_array($content) ? count($content) : strlen($content);
-                    break;
-                case "capitalize":
-                    $content = ucwords($content);
-                    break;
-            }
-        } while (count($values) > 0);
-        return $content;
-    }
-
-    protected function addSlashes(string $value): array|string
-    {
-        return preg_replace('/([\'\\\\])/', '\\\\$1', $value);
-    }
-
-    /**
-     * @throws TemplateParseException
+     * Evaluates a variable expression
+     *
+     * @param string $content The content to evaluate
+     * @param array $variables The variables context
+     * @param UndefinedInterface|null $undefined The strategy for handling undefined variables
+     * @return mixed The evaluated result
+     * @throws TemplateParseException If evaluation fails
      */
     protected function evaluateVariable(string $content, array $variables, UndefinedInterface|null $undefined = null): mixed
     {
-        if (str_contains($content, ' | ')) {
-            return $this->applyFilter(explode(" | ", $content), $variables);
-        } else if (preg_match('/\s*~\s*/', $content) ) {
-            $array = preg_split('/\s*~\s*/', $content);
-            for ($i = 0; $i < count($array); $i++) {
-                $array[$i] = $this->evaluateVariable($array[$i], $variables);
-            }
-            return implode("", $array);
-        } else if (!str_contains(trim($content), ' in ') && (preg_match('/^["\'].*["\']$/', trim($content)) || is_numeric(trim($content)) || trim($content) == "true" || trim($content) == "false")) {
-            $valueToEvaluate = $content;
-        // parse variables inside parenthesis
-        } else if (preg_match('/\((.*)\)/', $content)) {
-            $content = preg_replace_callback('/\((.*)\)/', function($matches) use ($variables) {
-                return $this->evaluateVariable($matches[1], $variables);
-            }, $content);
-            $valueToEvaluate = $this->evaluateVariable($content, $variables);
-        // match content with the array representation
-        } else if (preg_match('/^\[.*\]$/', trim($content))) {
-            $array = preg_split('/\s*,\s*/', trim(trim($content), "[]"));
-            $retArray = [];
-            for ($i = 0; $i < count($array); $i++) {
-                $arData = preg_split('/\s*:\s*/', $array[$i]);
-                if (count($arData) == 2) {
-                    $retArray[trim($arData[0], "\"'")] = $this->evaluateVariable($arData[1], $variables);
-                } else {
-                    $retArray[$i] = $this->evaluateVariable($array[$i], $variables);
-                }
-            }
-            return $retArray;
-        } else if (preg_match('/( in |<=|>=|==|!=|<>|\*\*|&&|\|\||[\+\-\/\*\%\<\>])/', $content) ) {
-            $array = preg_split('/( in |<=|>=|==|!=|<>|\*\*|&&|\|\||[\+\-\/\*\%\<\>])/', $content, -1, PREG_SPLIT_DELIM_CAPTURE);
-
-            for ($i = 0; $i < count($array); $i=$i+2) {
-                $array[$i] = $this->evaluateVariable($array[$i], $variables);
-                if (is_string($array[$i])) {
-                    $array[$i] = "'" . $this->addSlashes($array[$i]) . "'";
-                } else if (is_bool($array[$i])) {
-                    $array[$i] = $array[$i] ? "true" : "false";
-                } else if ($i > 0 && is_array($array[$i-2]) && is_array($array[$i]) && trim($array[$i-1]) == "+") {
-                    $array[$i-2] = json_encode(array_merge($array[$i-2], $array[$i]));
-                    $array[$i-1] = "";
-                    $array[$i] = "";
-                }
-            }
-
-            // Search for the operator `in`
-            $inIndex = array_search(" in ", $array);
-            if ($inIndex !== false) {
-                if (is_array($array[$inIndex+1])) {
-                    $array[$inIndex] = in_array($this->evaluateVariable($array[$inIndex-1], $variables), $array[$inIndex+1]) ? "true" : "false";
-                    $array[$inIndex+1] = "";
-                    $array[$inIndex-1] = "";
-                } elseif (is_string($array[$inIndex+1])) {
-                    $array[$inIndex] = str_contains($this->evaluateVariable($array[$inIndex + 1], $variables), $this->evaluateVariable($array[$inIndex - 1], $variables)) ? "true" : "false";
-                    $array[$inIndex+1] = "";
-                    $array[$inIndex-1] = "";
-                }
-            }
-            /** @var array $array */
-            $valueToEvaluate = implode(" ", $array);
-        } else if (str_starts_with(trim($content), "!")) {
-            $valueToEvaluate = $content;
-
-        } else {
-            $var = $this->getVar($content, $variables, $undefined);
-            if (is_array($var)) {
-                return $var;
-            }
-            $valueToEvaluate = "'" . $this->addSlashes($var) . "'";
-        }
-
-        if (is_bool($valueToEvaluate)) {
-            return $valueToEvaluate;
-        }
-    
-        $evalResult = "";
-        eval("\$evalResult = $valueToEvaluate;");
-        return $evalResult;
+        return $this->getEvaluatorChain()->evaluate($content, $variables, $undefined);
     }
 
     /**
-     * @throws TemplateParseException
+     * Find positions of start and end tags in a template
+     *
+     * @param string $result The template being processed
+     * @param string $startTag The start tag to find
+     * @param string $endTag The end tag to find
+     * @param int $iTag The tag number
+     * @return array An array with start and end tag positions and match data
+     */
+    protected function findTagPositions(string $result, string $startTag, string $endTag, int $iTag): array
+    {
+        $paddedTag = str_pad((string)$iTag, 2, "0", STR_PAD_LEFT);
+        $iPosStartTag = strpos($result, ' ' . $startTag . $paddedTag . " ");
+        
+        $matchesTmpStartTag = [];
+        $iPosStartTagAfter = preg_match('/\{%[+-]?\s*' . $startTag . ' /sU', $result, $matchesTmpStartTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
+        
+        $matchesTmpEndTag = [];
+        $iPosEndTag = preg_match('/\{%[+-]?\s*' . $endTag . '\s*[+-]?\%}/sU', $result, $matchesTmpEndTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
+        
+        return [
+            'iPosStartTag' => $iPosStartTag,
+            'iPosStartTagAfter' => $iPosStartTagAfter,
+            'iPosEndTag' => $iPosEndTag,
+            'matchesTmpStartTag' => $matchesTmpStartTag,
+            'matchesTmpEndTag' => $matchesTmpEndTag
+        ];
+    }
+
+    /**
+     * Prepare a document for parsing by numbering the tags
+     *
+     * @param string $partialTemplate The template to parse
+     * @param string $startTag The starting tag
+     * @param string $endTag The ending tag
+     * @return PartialDocument The prepared document
+     * @throws TemplateParseException If tag mismatch is found
      */
     protected function prepareDocumentToParse(string $partialTemplate, string $startTag, string $endTag): PartialDocument
     {
@@ -252,18 +250,21 @@ class Template
         $result = $partialTemplate;
 
         // Close the closest {% $endTag %} tags before opening a new {% $startTag %} tag
+        $self = $this;
         $fixArray = /**
          * @return (mixed|null|string|string[])[]
          *
          * @psalm-return list{mixed, array<string>|mixed|null|string}
          */
-        function ($iEndTag, $endTag, $result) use ($startTag): array {
+        function ($iEndTag, $endTag, $result) use ($startTag, $self): array {
             while (!empty($iEndTag)) {
                 $i = array_pop($iEndTag);
 
-                $iPosStartTag = strpos($result, ' ' . $startTag . str_pad($i, 2, "0", STR_PAD_LEFT) . " ");
-                $iPosStartTagAfter = preg_match('/\{%[+-]?\s*' . $startTag . ' /sU', $result, $matchesTmpStartTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
-                $iPosEndTag = preg_match('/\{%[+-]?\s*' .  $endTag . '\s*[+-]?\%}/sU', $result, $matchesTmpEndTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
+                $positions = $self->findTagPositions($result, $startTag, $endTag, $i);
+                $iPosStartTagAfter = $positions['iPosStartTagAfter'];
+                $iPosEndTag = $positions['iPosEndTag'];
+                $matchesTmpStartTag = $positions['matchesTmpStartTag'];
+                $matchesTmpEndTag = $positions['matchesTmpEndTag'];
             
                 if (($iPosStartTagAfter && $iPosEndTag) && $matchesTmpStartTag[0][1] < $matchesTmpEndTag[0][1]) {
                     $iEndTag[] = $i;
@@ -275,7 +276,7 @@ class Template
                     $left = $matches['left'] ?? '';
                     $right = $matches['right'] ?? '';
 
-                    return "{%$left " .  $endTag . str_pad($i, 2, "0", STR_PAD_LEFT) . " $right%}";
+                    return "{%$left " .  $endTag . str_pad((string)$i, 2, "0", STR_PAD_LEFT) . " $right%}";
                 }, $result, 1);
             }
 
@@ -291,9 +292,11 @@ class Template
                 return "{%$left " . $startTag . str_pad((string)$iStartTag, 2, "0", STR_PAD_LEFT) . " ";
             }, $result, 1);
 
-            $iPosStartTag = strpos($result, ' ' . $startTag . str_pad((string)$iStartTag, 2, "0", STR_PAD_LEFT) . " ");
-            $iPosStartTagAfter = preg_match('/\{%[+-]?\s*' . $startTag . ' /sU', $result, $matchesTmpStartTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
-            $iPosEndTag = preg_match('/\{%[+-]?\s*' .  $endTag . '\s*[+-]?\%}/sU', $result, $matchesTmpEndTag, PREG_OFFSET_CAPTURE, $iPosStartTag);
+            $positions = $this->findTagPositions($result, $startTag, $endTag, $iStartTag);
+            $iPosStartTagAfter = $positions['iPosStartTagAfter'];
+            $iPosEndTag = $positions['iPosEndTag'];
+            $matchesTmpStartTag = $positions['matchesTmpStartTag'];
+            $matchesTmpEndTag = $positions['matchesTmpEndTag'];
 
             if ($iPosStartTagAfter && $iPosEndTag && $matchesTmpEndTag[0][1] < $matchesTmpStartTag[0][1]) {
                 $result = preg_replace_callback('/\{%(?<left>[+-])?\s*' .  $endTag . '\s*(?<right>[+-])?\%}/sU', function ($matches) use ($iStartTag, $endTag) {
@@ -315,7 +318,31 @@ class Template
     }
 
     /**
-     * @throws TemplateParseException
+     * Apply whitespace control to content based on control flags
+     *
+     * @param string $content The content to process
+     * @param string|null $leftWhiteSpace The left whitespace control character
+     * @param string|null $rightWhiteSpace The right whitespace control character
+     * @return string The processed content
+     */
+    protected function applyWhitespaceControl(string $content, ?string $leftWhiteSpace = null, ?string $rightWhiteSpace = null): string
+    {
+        if ($leftWhiteSpace == "-") {
+            $content = ltrim($content);
+        }
+        if ($rightWhiteSpace == "-") {
+            $content = rtrim($content);
+        }
+        return $content;
+    }
+
+    /**
+     * Parse if/elseif/else conditions in the template
+     *
+     * @param string $partialTemplate The template to parse
+     * @param array $variables The variables context
+     * @return string The parsed template
+     * @throws TemplateParseException If parsing fails
      */
     protected function parseIf(string $partialTemplate, array $variables = []): string
     {
@@ -331,30 +358,119 @@ class Template
                 $condition = trim($matches[2]);
                 $rightWhiteSpace = trim($matches[3]);
                 $ifContent = $matches[4];
-                $ifParts = preg_split('/\{%\s*else\s*\%}/', $ifContent);
-                $return = "";
-                if ($this->evaluateVariable($condition, $variables)) {
-                    $return = $ifParts[0];
-                } else if (isset($ifParts[1])) {
-                    $return = $ifParts[1];
+                
+                // First split by 'else' to get the main parts
+                $mainParts = preg_split('/\{%\s*else\s*\%}/', $ifContent);
+                
+                // Check if there are 'elif' or 'elseif' tags in the first part
+                $elifPattern = '/\{%\s*(elif|elseif)\s+(.*?)\s*\%}/';
+                if (preg_match_all($elifPattern, $mainParts[0], $elifMatches, PREG_OFFSET_CAPTURE | PREG_PATTERN_ORDER)) {
+                    // Extract the if, elif and else parts
+                    $parts = [];
+                    $conditions = [];
+                    
+                    // Start with the 'if' condition
+                    $conditions[] = $condition;
+                    
+                    // Get positions of all elif tags
+                    $positions = array_column($elifMatches[0], 1);
+                    
+                    // Extract the 'if' content (until first elif)
+                    $parts[] = substr($mainParts[0], 0, $positions[0]);
+                    
+                    // Extract the 'elif' conditions
+                    foreach ($elifMatches[2] as $match) {
+                        $conditions[] = trim($match[0]);
+                    }
+                    
+                    // Extract content between 'elif' tags
+                    for ($j = 0; $j < count($positions) - 1; $j++) {
+                        $startPos = $positions[$j] + strlen($elifMatches[0][$j][0]);
+                        $length = $positions[$j+1] - $startPos;
+                        $parts[] = substr($mainParts[0], $startPos, $length);
+                    }
+                    
+                    // Add last 'elif' part (to the end)
+                    if (!empty($positions)) {
+                        $lastPos = end($positions) + strlen(end($elifMatches[0])[0]);
+                        $parts[] = substr($mainParts[0], $lastPos);
+                    }
+                    
+                    // Add 'else' part if it exists
+                    $elsePart = $mainParts[1] ?? "";
+                    
+                    // Evaluate conditions one by one
+                    $return = "";
+                    $foundMatch = false;
+                    
+                    for ($j = 0; $j < count($conditions); $j++) {
+                        if ($this->evaluateVariable($conditions[$j], $variables)) {
+                            $return = $parts[$j];
+                            $foundMatch = true;
+                            break;
+                        }
+                    }
+                    
+                    // If no condition was met and there's an else part
+                    if (!$foundMatch && isset($mainParts[1])) {
+                        $return = $elsePart;
+                    }
+                } else {
+                    // Original behavior for if/else
+                    $ifParts = $mainParts;
+                    $return = "";
+                    if ($this->evaluateVariable($condition, $variables)) {
+                        $return = $ifParts[0];
+                    } else if (isset($ifParts[1])) {
+                        $return = $ifParts[1];
+                    }
                 }
 
-                if ($leftWhiteSpace == "-") {
-                    $return = ltrim($return);
-                }
-                if ($rightWhiteSpace == "-") {
-                    $return = rtrim($return);
-                }
-                return $return;
+                return $this->applyWhitespaceControl($return, $leftWhiteSpace, $rightWhiteSpace);
             }, $partial->result);
         }
         return $partial->result;
     }
 
     /**
+     * Process nested for loops in content
+     *
+     * @param string $content The content to process
+     * @param array $variables The variables context
+     * @param int|null $specificLoopId Process only this specific loop ID if provided
+     * @return string The processed content
      * @throws TemplateParseException
      */
-    protected function parseFor($variables, $forStart = 1, $forCount = null, $partialTemplate = null): string
+    protected function processNestedForLoops(string $content, array $variables, ?int $specificLoopId = null): string
+    {
+        $processedContent = $content;
+        $regexNestedFor = '/\{%\s*for(\d{2}).*\%}/sU';
+        
+        if (preg_match_all($regexNestedFor, $processedContent, $matchesNestedFor)) {
+            foreach ($matchesNestedFor[1] as $matchNested) {
+                $matchNested = intval($matchNested);
+                // Skip if we're looking for a specific loop ID and this isn't it
+                if ($specificLoopId !== null && $matchNested !== $specificLoopId) {
+                    continue;
+                }
+                $processedContent = $this->parseFor($variables, $matchNested, $matchNested, $processedContent);
+            }
+        }
+        
+        return $processedContent;
+    }
+
+    /**
+     * Parse for loops in the template
+     *
+     * @param array $variables The variables context
+     * @param int $forStart The starting for loop index
+     * @param int|null $forCount The number of for loops
+     * @param string|null $partialTemplate The template to parse
+     * @return string The parsed template
+     * @throws TemplateParseException If parsing fails
+     */
+    protected function parseFor(array $variables, int $forStart = 1, ?int $forCount = null, ?string $partialTemplate = null): string
     {
         if (empty($partialTemplate)) {
             $partialTemplate = $this->template;
@@ -367,18 +483,35 @@ class Template
 
         // Find {%for%} and {%endfor%} and replace the content between them
         for ($i=$forStart; $i <= $partial->startTagCount; $i++) {
-            $position = str_pad($i, 2, "0", STR_PAD_LEFT);
+            $position = str_pad((string)$i, 2, "0", STR_PAD_LEFT);
 
             $regex = '/\{%([-+])?\s*for' . $position . '(.*)\s*([-+])?\%}(.*)\{%\s*endfor' . $position . '\s*\%}/sU';
-            $partial->result = preg_replace_callback($regex, function ($matches) use ($variables) {
+            $partial->result = preg_replace_callback($regex, function ($matches) use ($variables): string {
         
                 $content = "";
                 $regexFor = '/\s*(?<key1>[\w\d_-]+)(\s*,\s*(?<key2>[\w\d_-]+))?\s+in\s+(?<array>.*)\s*/';
                 $leftWhiteSpace = trim($matches[1]);
                 $forExpression = trim($matches[2]);
                 $rightWhiteSpace = trim($matches[3]);
+                $loopContent = $matches[4] ?? '';
+                
+                // Check if there's an else block in the for loop
+                $elseParts = preg_split('/\{%\s*else\s*\%}/', $loopContent, 2);
+                $forContent = $elseParts[0];
+                $elseContent = $elseParts[1] ?? "";
+                
                 if (preg_match($regexFor, $forExpression, $matchesFor)) {
                     $array = $this->evaluateVariable($matchesFor["array"], $variables);
+                    
+                    // If the array is empty and there's an else block, render the else content
+                    if (empty($array) && !empty($elseContent)) {
+                        // Process nested for loops in the else content first
+                        $processedElseContent = $this->processNestedForLoops($elseContent, $variables);
+                        
+                        $elseResult = $this->parseVariables($this->parseIf($processedElseContent, $variables), $variables);
+                        return $this->applyWhitespaceControl($elseResult, $leftWhiteSpace, $rightWhiteSpace);
+                    }
+                    
                     if (!empty($matchesFor["key2"])) {
                         $forKey = $matchesFor["key1"];
                         $forValue = $matchesFor["key2"];
@@ -387,42 +520,44 @@ class Template
                         $forValue = $matchesFor["key1"];
                     }
                     $index = 0;
-                    $loop = [];
+                    
                     foreach ($array as $key => $value) {
-                        $loop["first"] = $index == 0;
-                        $loop["last"] = $index == count($array) - 1;
-                        $loop["index"] = $index + 1;
-                        $loop["index0"] = $index;
-                        $loop["revindex"] = count($array) - $index;
-                        $loop["revindex0"] = count($array) - $index - 1;
-                        $loop["length"] = count($array);
-                        $loop["even"] = $index % 2 == 0;
-                        $loop["odd"] = $index % 2 == 1;
-
-                        $loopControl = [
-                            $forKey => $key, 
-                            $forValue => $value
+                        // Create loop variable for this iteration
+                        $loop = [
+                            "first" => $index == 0,
+                            "last" => $index == count($array) - 1,
+                            "index" => $index + 1,
+                            "index0" => $index,
+                            "revindex" => count($array) - $index,
+                            "revindex0" => count($array) - $index - 1,
+                            "length" => count($array),
+                            "even" => $index % 2 == 0,
+                            "odd" => $index % 2 == 1
                         ];
 
-                        // Find {% for00 %} and get the array with 00 pattern
-                        $regexNestedFor = '/\{%\s*for(\d{2}).*\%}/sU';
-                        if (preg_match_all($regexNestedFor, $matches[4], $matchesNestedFor)) {
-                            foreach ($matchesNestedFor[1] as $matchNested) {
-                                $matchNested = intval($matchNested);
-                                $matches[4] = $this->parseFor($variables + $loopControl, $matchNested, $matchNested, $matches[4]);
-                            }
-                        }
+                        // Create the local variables for this iteration
+                        $loopVariables = [
+                            $forKey => $key,
+                            $forValue => $value,
+                            "loop" => $loop
+                        ];
                         
-                        $forVariables = $variables + $loopControl + ["loop" => $loop];
-                        $resultContent = $this->parseVariables($this->parseIf($matches[4], $forVariables), $forVariables);
-                        if ($leftWhiteSpace == "-") {
-                            $resultContent = ltrim($resultContent);
-                        }
-                        if ($rightWhiteSpace == "-") {
-                            $resultContent = rtrim($resultContent);
-                        }
+                        // Combine with parent variables but give precedence to the loop variables
+                        $forVariables = array_merge($variables, $loopVariables);
+                        
+                        // Process the content for this iteration with nested for loops and if conditions
+                        $iterationContent = $forContent;
+                        
+                        // Process nested for loops with the current scope's variables
+                        $iterationContent = $this->processNestedForLoops($iterationContent, $forVariables);
+                        
+                        // Process if conditions and variables
+                        $resultContent = $this->parseVariables($this->parseIf($iterationContent, $forVariables), $forVariables);
+                        
+                        // Apply whitespace control
+                        $resultContent = $this->applyWhitespaceControl($resultContent, $leftWhiteSpace, $rightWhiteSpace);
+                        
                         $content .= $resultContent;
-                        
                         $index++;
                     }
                 }
@@ -435,10 +570,12 @@ class Template
     }
 
     /**
-     * @param string $partialTemplate
-     * @param array $variables
-     * @return array|string|null
-     * @throws TemplateParseException
+     * Parse variables in the template
+     *
+     * @param string $partialTemplate The template to parse
+     * @param array $variables The variables context
+     * @return array|string|null The parsed template
+     * @throws TemplateParseException If parsing fails
      */
     protected function parseVariables(string $partialTemplate, array $variables): array|string|null
     {
@@ -449,5 +586,4 @@ class Template
             return (string) $this->evaluateVariable($matches[1], $variables);
         }, $partialTemplate);
     }
-
 }

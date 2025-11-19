@@ -2,80 +2,266 @@
 
 namespace Tests;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class TemplateIfTest extends TestCase
 {
-    public function testIf(): void
+    /**
+     * @return array
+     */
+    public static function ifConditionsProvider(): array
     {
-        $template = new \ByJG\JinjaPhp\Template("{% if true %}true{% endif %}");
-        $this->assertEquals("true", $template->render());
+        return [
+            'simple true condition' => [
+                "{% if true %}true{% endif %}", 
+                [], 
+                "true"
+            ],
+            'simple false condition' => [
+                "{% if false %}true{% endif %}", 
+                [], 
+                ""
+            ],
+            'comparison less than (false)' => [
+                "{% if 10 < 4 %}true{% endif %}", 
+                [], 
+                ""
+            ],
+            'comparison greater than (true)' => [
+                "{% if 10 > 4 %}true{% endif %}", 
+                [], 
+                "true"
+            ],
+            'variable equality with parentheses' => [
+                "{% if (var1 == 'test') %}true{% endif %}", 
+                ['var1' => 'test'], 
+                "true"
+            ],
+            'variable inequality' => [
+                "{% if var1 != 'test' %}true{% endif %}", 
+                ['var1' => 'test'], 
+                ""
+            ],
+            'variable equality' => [
+                "{% if var1 == 'test' %}true{% endif %}", 
+                ['var1' => 'test'], 
+                "true"
+            ],
+            'if-else with true condition' => [
+                "{% if true %}true{% else %}false{% endif %}", 
+                [], 
+                "true"
+            ],
+            'if-else with false condition' => [
+                "{% if false %}true{% else %}false{% endif %}", 
+                [], 
+                "false"
+            ],
+            'if-else with variable comparison (false)' => [
+                "{% if var1 == 'test' %}true{%else%}false{% endif %}", 
+                ['var1' => 'notest'], 
+                "false"
+            ],
+            'variable rendering inside if block' => [
+                "{% if (var1 == 'abc') %}Show result of {{ var2 }}{% endif %}", 
+                ['var1' => 'abc', 'var2' => 123], 
+                "Show result of 123"
+            ],
+            'complex AND condition with variable' => [
+                "{% if var1 == 'abc' && var2 == 123 %}Show result of {{ var3 }}{% else %}Show nothing{% endif %}", 
+                ['var1' => 'abc', 'var2' => 123, 'var3' => 456], 
+                "Show result of 456"
+            ],
+            'complex negation with AND' => [
+                "{% if var1 == 'abc' && !(var2 == 123) %}Show result of {{ var3 }}{% else %}Show nothing{% endif %}", 
+                ['var1' => 'abc', 'var2' => 123, 'var3' => 456], 
+                "Show nothing"
+            ],
+            'nested array check' => [
+                "{% if var1.type == 'test' %}true{%else%}false{% endif %}", 
+                ['var1' => ['type' => 'test']], 
+                "true"
+            ],
+            'nested array check with parentheses' => [
+                "{% if var1.type == 'test(1)' %}true{%else%}false{% endif %}",
+                ['var1' => ['type' => 'test(1)']],
+                "true"
+            ],
+            'nested array check with parentheses (2)' => [
+                "{% if foo == '(some(ffff)(aa))' %}true{%else%}false{% endif %}",
+                ['foo' => '(some(ffff)(aa))'],
+                "true"
+            ],
+            'nested array check with square brackets' => [
+                "{% if var1.type == 'test[1]' %}true{%else%}false{% endif %}",
+                ['var1' => ['type' => 'test[1]']],
+                "true"
+            ],
+            'check var with special words' => [
+                "{% if foo == 'rock in the water' %}true{%else%}false{% endif %}",
+                ['foo' => 'rock in the water'],
+                "true"
+            ],
+            'check in' => [
+                "{% if foo in ['rock', 'classic'] %}true{%else%}false{% endif %}",
+                ['foo' => 'rock'],
+                "true"
+            ],
+            'check in false' => [
+                "{% if foo in ['rock', 'classic'] %}true{%else%}false{% endif %}",
+                ['foo' => 'jazz'],
+                "false"
+            ],
+            'check in in' => [
+                "{% if foo in ['rock in the water', 'classic'] %}true{%else%}false{% endif %}",
+                ['foo' => 'rock in the water'],
+                "true"
+            ],
+            'check in in false' => [
+                "{% if foo in ['rock in the water', 'classic'] %}true{%else%}false{% endif %}",
+                ['foo' => 'jazz'],
+                "false"
+            ],
+            'check substring in array element' => [
+                "{% if 'test' in var1.type %}true{%else%}false{% endif %}", 
+                ['var1' => ['type' => 'test(1)']], 
+                "true"
+            ],
+            'elif condition with first test true' => [
+                "{% if true %}true{% elif true %}false{% endif %}", 
+                [], 
+                "true"
+            ],
+            'elif condition with first test false' => [
+                "{% if false %}true{% elif true %}false{% endif %}",
+                [], 
+                "false"
+            ],
+            'elif condition with both tests false' => [
+                "{% if false %}true{% elif false %}false{% endif %}",
+                [], 
+                ""
+            ],
+            'elif with else condition - all false' => [
+                "{% if false %}true{% elif false %}false{% else %}else{% endif %}",
+                [], 
+                "else"
+            ],
+            'multiple elif conditions with middle true' => [
+                "{% if false %}true{% elif false %}false{% elif true %}elif{% endif %}",
+                [], 
+                "elif"
+            ],
+            'multiple elif conditions all false' => [
+                "{% if false %}true{% elif false %}false{% elif false %}elif{% endif %}",
+                [], 
+                ""
+            ],
+            'multiple elif conditions all false with else' => [
+                "{% if false %}true{% elif false %}false{% elif false %}elif{% else %}else{% endif %}",
+                [], 
+                "else"
+            ],
+            'logical and operator' => [
+                "{% if var1 == 'abc' and var2 == 123 %}true{% else %}false{% endif %}",
+                ['var1' => 'abc', 'var2' => 123],
+                "true"
+            ],
+            'logical and operator (false)' => [
+                "{% if var1 == 'abc' and var2 == 456 %}true{% else %}false{% endif %}",
+                ['var1' => 'abc', 'var2' => 123],
+                "false"
+            ],
+            'logical or operator' => [
+                "{% if var1 == 'abc' or var2 == 456 %}true{% else %}false{% endif %}",
+                ['var1' => 'abc', 'var2' => 123],
+                "true"
+            ],
+            'logical or operator (both false)' => [
+                "{% if var1 == 'xyz' or var2 == 456 %}true{% else %}false{% endif %}",
+                ['var1' => 'abc', 'var2' => 123],
+                "false"
+            ],
+            'complex expression with and/or' => [
+                "{% if (var1 == 'abc' and var2 == 123) or var3 == 'xyz' %}true{% else %}false{% endif %}",
+                ['var1' => 'abc', 'var2' => 123, 'var3' => 'abc'],
+                "true"
+            ],
+            'mix and/or with &&/||' => [
+                "{% if var1 == 'abc' and var2 == 123 || var3 == 'xyz' %}true{% else %}false{% endif %}",
+                ['var1' => 'abc', 'var2' => 456, 'var3' => 'xyz'],
+                "true"
+            ],
+            'precedence test 1' => [
+                "{% if var1 == 'abc' and (var2 == 123 || var3 == 'xyz') %}true{% else %}false{% endif %}",
+                ['var1' => 'abc', 'var2' => 456, 'var3' => 'xyz'],
+                "true"
+            ],
+            'precedence test 2' => [
+                "{% if var1 == 'abc' and var2 == 123 || var3 == 'abc' %}true{% else %}false{% endif %}",
+                ['var1' => 'abc', 'var2' => 456, 'var3' => 'abc'],
+                "true"
+            ],
+            'precedence test 3' => [
+                "{% if var1 == 'abc' and (var2 == 123 || var3 == 'efg') %}true{% else %}false{% endif %}",
+                ['var1' => 'abc', 'var2' => 456, 'var3' => 'efg'],
+                "true"
+            ],
+            'precedence test 4' => [
+                "{% if var1 == 'abc' and var2 == 456 and var3 == 'abc' %}true{% else %}false{% endif %}",
+                ['var1' => 'abc', 'var2' => 456, 'var3' => 'abc'],
+                "true"
+            ],
+            'precedence test 5' => [
+                "{% if var1 == 'abc' and var2 == 456 or var3 == 'xyz' %}true{% else %}false{% endif %}",
+                ['var1' => 'abc', 'var2' => 456, 'var3' => 'abc'],
+                "true"
+            ],
+            'precedence test 6' => [
+                "{% if var1 == 'abc' and var2 == 456 or var3 == 'xyz' %}true{% else %}false{% endif %}",
+                ['var1' => 'xyz', 'var2' => 456, 'var3' => 'abc'],
+                "false"
+            ],
+            // Tests for bracket notation
+            'array access with bracket notation' => [
+                "{% if items[0] == 'first' %}true{% else %}false{% endif %}",
+                ['items' => ['first', 'second', 'third']],
+                "true"
+            ],
+            'array access with quoted key in bracket notation' => [
+                "{% if user['name'] == 'John' %}true{% else %}false{% endif %}",
+                ['user' => ['name' => 'John', 'age' => 30]],
+                "true"
+            ],
+            'nested array access with bracket notation' => [
+                "{% if users[0]['role'] == 'admin' %}true{% else %}false{% endif %}",
+                ['users' => [['role' => 'admin', 'name' => 'Admin'], ['role' => 'user', 'name' => 'User']]],
+                "true"
+            ],
+            'comparing multiple bracket notations' => [
+                "{% if users[0]['role'] == users[1]['role'] %}true{% else %}false{% endif %}",
+                ['users' => [['role' => 'admin'], ['role' => 'user']]],
+                "false"
+            ],
+            'mixed dot and bracket notation' => [
+                "{% if data.users[0].name == 'John' %}true{% else %}false{% endif %}",
+                ['data' => ['users' => [['name' => 'John'], ['name' => 'Jane']]]],
+                "true"
+            ],
+            'bracket notation with in operator' => [
+                "{% if 'admin' in user['roles'] %}true{% else %}false{% endif %}",
+                ['user' => ['roles' => ['admin', 'editor']]],
+                "true"
+            ],
+        ];
+    }
 
-        $template = new \ByJG\JinjaPhp\Template("{% if false %}true{% endif %}");
-        $this->assertEquals("", $template->render());
-
-        $template = new \ByJG\JinjaPhp\Template("{% if 10 < 4 %}true{% endif %}");
-        $this->assertEquals("", $template->render());
-
-        $template = new \ByJG\JinjaPhp\Template("{% if 10 > 4 %}true{% endif %}");
-        $this->assertEquals("true", $template->render());
-
-        $template = new \ByJG\JinjaPhp\Template("{% if (var1 == 'test') %}true{% endif %}");
-        $this->assertEquals("true", $template->render(['var1' => 'test']));
-
-        $template = new \ByJG\JinjaPhp\Template("{% if var1 != 'test' %}true{% endif %}");
-        $this->assertEquals("", $template->render(['var1' => 'test']));
-
-        $template = new \ByJG\JinjaPhp\Template("{% if var1 == 'test' %}true{% endif %}");
-        $this->assertEquals("true", $template->render(['var1' => 'test']));
-
-        $template = new \ByJG\JinjaPhp\Template("{% if true %}true{% else %}false{% endif %}");
-        $this->assertEquals("true", $template->render());
-
-        $template = new \ByJG\JinjaPhp\Template("{% if false %}true{% else %}false{% endif %}");
-        $this->assertEquals("false", $template->render());
-
-        $template = new \ByJG\JinjaPhp\Template("{% if var1 == 'test' %}true{%else%}false{% endif %}");
-        $this->assertEquals("false", $template->render(['var1' => 'notest']));
-
-        $template = new \ByJG\JinjaPhp\Template("{% if (var1 == 'abc') %}Show result of {{ var2 }}{% endif %}");
-        $this->assertEquals("Show result of 123", $template->render(['var1' => 'abc', 'var2' => 123]));
-
-        $template = new \ByJG\JinjaPhp\Template("{% if var1 == 'abc' && var2 == 123 %}Show result of {{ var3 }}{% else %}Show nothing{% endif %}");
-        $this->assertEquals("Show result of 456", $template->render(['var1' => 'abc', 'var2' => 123, 'var3' => 456]));
-
-        $template = new \ByJG\JinjaPhp\Template("{% if var1 == 'abc' && !(var2 == 123) %}Show result of {{ var3 }}{% else %}Show nothing{% endif %}");
-        $this->assertEquals("Show nothing", $template->render(['var1' => 'abc', 'var2' => 123, 'var3' => 456]));
-
-        $template = new \ByJG\JinjaPhp\Template("{% if var1.type == 'test' %}true{%else%}false{% endif %}");
-        $this->assertEquals("true", $template->render(['var1' => ['type' => 'test']]));
-
-//        $template = new \ByJG\JinjaPhp\Template("{% if var1.type == 'test(1)' %}true{%else%}false{% endif %}");
-//        $this->assertEquals("true", $template->render(['var1' => ['type' => 'test(1)']]));
-
-        $template = new \ByJG\JinjaPhp\Template("{% if 'test' in var1.type %}true{%else%}false{% endif %}");
-        $this->assertEquals("true", $template->render(['var1' => ['type' => 'test(1)']]));
-
-//         $template = new \ByJG\JinjaPhp\Template("{% if true %}true{% elseif true %}false{% endif %}");
-//         $this->assertEquals("true", $template->render());
-
-        // $template = new \ByJG\JinjaPhp\Template("{% if false %}true{% elseif true %}false{% endif %}");
-        // $this->assertEquals("false", $template->render());
-
-        // $template = new \ByJG\JinjaPhp\Template("{% if false %}true{% elseif false %}false{% endif %}");
-        // $this->assertEquals("", $template->render());
-
-        // $template = new \ByJG\JinjaPhp\Template("{% if false %}true{% elseif false %}false{% else %}else{% endif %}");
-        // $this->assertEquals("else", $template->render());
-
-        // $template = new \ByJG\JinjaPhp\Template("{% if false %}true{% elseif false %}false{% elseif true %}elseif{% endif %}");
-        // $this->assertEquals("elseif", $template->render());
-
-        // $template = new \ByJG\JinjaPhp\Template("{% if false %}true{% elseif false %}false{% elseif false %}elseif{% endif %}");
-        // $this->assertEquals("", $template->render());
-
-        // $template = new \ByJG\JinjaPhp\Template("{% if false %}true{% elseif false %}false{% elseif false %}elseif{% else %}else{% endif %}");
-        // $this->assertEquals("else", $template->render
+    #[DataProvider('ifConditionsProvider')]
+    public function testIf(string $template, array $variables, string $expected): void
+    {
+        $template = new \ByJG\JinjaPhp\Template($template);
+        $this->assertEquals($expected, $template->render($variables));
     }
 
     public function testMultipleIf(): void
@@ -196,6 +382,38 @@ EOT;
 
         $template = new \ByJG\JinjaPhp\Template($templateString);
         $this->assertEquals($expected, $template->render());
+    }
+
+    public function testIfElif(): void
+    {
+        $templateContent = file_get_contents(__DIR__ . '/templates/elif-test.html');
+
+        // Test different age groups
+        $ages = [
+            5 => "Child user",
+            15 => "Teen user",
+            30 => "Adult user",
+            70 => "Senior user",
+        ];
+
+        foreach ($ages as $age => $expected) {
+            $template = new \ByJG\JinjaPhp\Template($templateContent);
+            $result = $template->render(['age' => $age]);
+
+            $this->assertEquals($expected, trim($result));
+        }
+    }
+
+    public function testArrayAccessWithBracketNotation(): void
+    {
+        $template = new \ByJG\JinjaPhp\Template("{% if items[1] == 'second' %}Matched{% else %}Not matched{% endif %}");
+        $this->assertEquals("Matched", $template->render(['items' => ['first', 'second', 'third']]));
+        
+        $template = new \ByJG\JinjaPhp\Template("{% if nested['items'][0] == 'item1' %}Found{% else %}Not found{% endif %}");
+        $this->assertEquals("Found", $template->render(['nested' => ['items' => ['item1', 'item2']]]));
+        
+        $template = new \ByJG\JinjaPhp\Template("{% if deep['level1']['level2'][0] == 'value' %}Deep match{% endif %}");
+        $this->assertEquals("Deep match", $template->render(['deep' => ['level1' => ['level2' => ['value', 'other']]]]));
     }
 
 }

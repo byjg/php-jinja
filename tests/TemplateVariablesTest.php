@@ -57,6 +57,33 @@ class TemplateVariablesTest extends TestCase
         $this->assertEquals("Test var1: value1.", $template->render(['var1' => ['key1' => 'value1']]));
     }
 
-    // TODO: test with {{ var1['key1'] }}
+    public function testRenderArrayWithBrackets(): void
+    {
+        $template = new \ByJG\JinjaPhp\Template("Test var1: {{ var1[0] }}.");
+        $this->assertEquals("Test var1: value1.", $template->render(['var1' => ['value1']]));
+    }
 
+    public function testRenderAssociativeArrayWithBrackets(): void
+    {
+        $template = new \ByJG\JinjaPhp\Template("Test var1: {{ var1['key1'] }}.");
+        $this->assertEquals("Test var1: value1.", $template->render(['var1' => ['key1' => 'value1', 'key2' => 'value2']]));
+    }
+    
+    public function testRenderArrayWithBracketsAndDotNotation(): void
+    {
+        $template = new \ByJG\JinjaPhp\Template("Test var1: {{ var1[1].nested }}.");
+        $this->assertEquals("Test var1: nestedvalue2.", $template->render(['var1' => [['nested' => 'nestedvalue'], ['nested' => 'nestedvalue2']]]));
+    }
+    
+    public function testRenderArrayWithNestedBrackets(): void
+    {
+        $template = new \ByJG\JinjaPhp\Template("Test var1: {{ var1['items'][0] }}.");
+        $this->assertEquals("Test var1: item1.", $template->render(['var1' => ['items' => ['item1', 'item2']]]));
+    }
+
+    public function testRenderArrayWithNestedBracketsAndDotNotation(): void
+    {
+        $template = new \ByJG\JinjaPhp\Template("Test var1: {{ var1['items'].1 }}.");
+        $this->assertEquals("Test var1: item2.", $template->render(['var1' => ['items' => ['item1', 'item2']]]));
+    }
 }

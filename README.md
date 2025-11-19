@@ -1,172 +1,33 @@
-# Jinja for PHP
-
 [![Build Status](https://github.com/byjg/php-jinja/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/byjg/php-jinja/actions/workflows/phpunit.yml)
 [![Opensource ByJG](https://img.shields.io/badge/opensource-byjg-success.svg)](http://opensource.byjg.com)
 [![GitHub source](https://img.shields.io/badge/Github-source-informational?logo=github)](https://github.com/byjg/php-jinja/)
 [![GitHub license](https://img.shields.io/github/license/byjg/php-jinja.svg)](https://opensource.byjg.com/opensource/licensing.html)
-[![GitHub release](https://img.shields.io/github/release/byjg/php-jinja.svg)](https://github.com/byjg/php-jinja/releases/)
+[![GitHub release](https://img.shields.io/github/release/byjg/php-jinja.svg)](https://github.com/byjg/uri/releases/)
 
-Jinja for PHP is a PHP implementation of the [Jinja2](http://jinja.pocoo.org/) template engine.
+# Jinja for PHP
 
-## Introduction
+Jinja for PHP is a lightweight PHP implementation of the [Jinja2](https://jinja.palletsprojects.com/) template engine originally developed for Python.
 
-This library is a port of the Jinja2 template engine to PHP. It is a partial implementation of the Jinja2 template engine.
+## Overview
 
-The main goal of this library is allow process templates both in Jinja Python and PHP, however he API is not the same as the original in Python.
+This library allows you to seamlessly process Jinja templates in PHP applications. It provides a familiar syntax for those coming from Python while offering a native PHP implementation.
 
-## Implemented Features
+### Key Features
 
-Currently, the following features are implemented:
-
-### Literals
-
-Most of the literals are supported. e.g.
-
-```jinja
-{{ 1 }}
-{{ 1.2 }}
-{{ "Hello World" }}
-{{ true }}
-{{ false }}
-{{ none }}
-{{ [1, 2, 3] }}
-{{ ['a': 1, 'b': 2] }}  // It is different from Python
-```
-
-@todo: use the python notation for dictionaries.
-
-### Variables
-
-Most of the variables are supported. e.g.
-
-```jinja
-{{ myvar }}
-{{ myvar.myproperty }}
-{{ myvar.myproperty.1 }}
-{{ myvar.myproperty.a }}
-{{ myvar.myproperty.a.myproperty }}
-{{ myvar.myproperty.a.myproperty.1 }}
-{{ myvar.myproperty.a.myproperty.1.myproperty }}
-```
-
-@todo: The notation with brackets is not yet supported.
-
-### Filters
-
-Some filters are implemented:
-
-```jinja
-{{ var | upper }}
-{{ var | lower }}
-{{ var | default }}
-{{ var | default('-') }}
-{{ var | replace('a', 'b') }}
-{{ var | join }}
-{{ var | join(',') }}
-{{ var | split }}
-{{ var | split(',') }}
-{{ var | capitalize }}
-{{ var | trim }}
-{{ var | trim('-') }}
-{{ var | length }}
-```
-
-### Math Operations
-
-```jinja
-{{ 1 + 2 }}
-{{ 1 - 2 }}
-{{ 1 * 2 }}
-{{ 1 / 2 }}
-{{ 1 % 2 }}
-{{ 1 ** 2 }}
-```
-
-### Concatenation
-
-```jinja
-{{ "Hello" ~ "World" }}
-{{ var1 ~ var2 }}
-```
-
-### Comparison
-
-```jinja
-{{ 1 == 2 }}
-{{ 1 != 2 }}
-{{ 1 < 2 }}
-{{ 1 <= 2 }}
-{{ 1 > 2 }}
-{{ 1 >= 2 }}
-```
-
-### Logic Operations
-
-There are some differences between the Python and PHP implementation.
-TODO: use `and` and `or` instead of `&&` and `||`
-
-```jinja
-{{ 1 && 2 }}
-{{ 1 || 2 }}
-{{ ! 1 }}
-```
-
-### If
-
-@todo: `elif` is not implemented yet.
-
-```jinja
-{% if var1 == var2 %}
-    {{ var1 }} is equal to {{ var2 }}
-{% else %}
-    1 is not equal to 2 or 3
-{% endif %}
-```
-
-```jinja
-{% if 1 == 2 %}
-    1 is equal to 2
-{% else %}
-    1 is not equal to 2 or 3
-{% endif %}
-```
-
-### For
-
-@todo: `else` is not implemented yet.
-
-```jinja
-{% for item in items %}
-    {{ item }}
-{% endfor %}
-```
-
-```jinja
-{% for key, value in items %}
-    {{ key }}: {{ value }}
-{% endfor %}
-```
-
-Loop control variable:
-
-- loop.index
-- loop.index0
-- loop.revindex
-- loop.revindex0
-- loop.first
-- loop.last
-- loop.length
-
-```jinja
-{% for item in items %}
-    {{ loop.index }}: {{ item }}
-{% endfor %}
-```
+- **Python Compatibility**: Process the same Jinja templates in both Python and PHP
+- **Variable Support**: Full support for variables, properties, and nested structures
+- **Conditional Logic**: `if`/`else` statements for conditional rendering
+- **Loops**: Iterate over arrays and objects with `for` loops
+- **Filters**: Transform output with built-in filters like `upper`, `lower`, `default`, etc.
+- **Flexible Loaders**: Load templates from strings or the filesystem
+- **Undefined Variable Handling**: Different strategies for handling undefined variables
+- **Expressions**: Support for mathematical operations, comparisons, and concatenation
 
 ## Usage
 
 ```php
 use ByJG\JinjaPhp\Template;
+use ByJG\JinjaPhp\Undefined\DebugUndefined;
 
 $templateString = <<<EOT
 Hello {{ name }}
@@ -180,6 +41,19 @@ $variables = [
 ];
 echo $template->render($variables);
 ```
+## Documentation
+
+The detailed documentation is organized as follows:
+
+1. [Basic Usage](docs/basic-usage.md)
+2. [Template Syntax](docs/template-syntax.md)
+3. [Loaders](docs/loaders.md)
+4. [Undefined Variables](docs/undefined-variables.md)
+5. [Filters](docs/filters.md)
+6. [Control Structures](docs/control-structures.md)
+7. [Advanced Topics](docs/advanced-topics.md)
+8. [API Reference](docs/api.md)
+9. [PHP Jinja vs Python Jinja2 Comparison](docs/comparison.md)
 
 ## Installation
 
