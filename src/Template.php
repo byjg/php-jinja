@@ -12,7 +12,6 @@ use ByJG\JinjaPhp\Evaluator\ParenthesizedEvaluator;
 use ByJG\JinjaPhp\Evaluator\VariableEvaluator;
 use ByJG\JinjaPhp\Exception\TemplateParseException;
 use ByJG\JinjaPhp\Internal\PartialDocument;
-use ByJG\JinjaPhp\Undefined\DefaultUndefined;
 use ByJG\JinjaPhp\Undefined\StrictUndefined;
 use ByJG\JinjaPhp\Undefined\UndefinedInterface;
 
@@ -119,7 +118,7 @@ class Template
     }
 
     /**
-     * Gets a variable from the variables array, supporting dot notation and bracket notation
+     * Gets a variable from the variable's array, supporting dot notation and bracket notation
      *
      * @param string $varName The variable name with dot notation or bracket notation
      * @param array $variables The variables context
@@ -150,7 +149,7 @@ class Template
                         // Create a temporary array with the result as the first element
                         return $this->getVar('temp' . $remaining, ['temp' => $result], $undefined);
                     } 
-                    // If the next character is a dot, it's dot notation
+                    // If the next character is a dot, it's a dot notation
                     else if (str_starts_with($remaining, '.')) {
                         return $this->getVar(substr($remaining, 1), is_array($result) ? $result : ['value' => $result], $undefined);
                     }
@@ -250,17 +249,16 @@ class Template
         $result = $partialTemplate;
 
         // Close the closest {% $endTag %} tags before opening a new {% $startTag %} tag
-        $self = $this;
         $fixArray = /**
          * @return (mixed|null|string|string[])[]
          *
          * @psalm-return list{mixed, array<string>|mixed|null|string}
          */
-        function ($iEndTag, $endTag, $result) use ($startTag, $self): array {
+        function ($iEndTag, $endTag, $result) use ($startTag): array {
             while (!empty($iEndTag)) {
                 $i = array_pop($iEndTag);
 
-                $positions = $self->findTagPositions($result, $startTag, $endTag, $i);
+                $positions = $this->findTagPositions($result, $startTag, $endTag, $i);
                 $iPosStartTagAfter = $positions['iPosStartTagAfter'];
                 $iPosEndTag = $positions['iPosEndTag'];
                 $matchesTmpStartTag = $positions['matchesTmpStartTag'];
@@ -390,7 +388,7 @@ class Template
                         $parts[] = substr($mainParts[0], $startPos, $length);
                     }
                     
-                    // Add last 'elif' part (to the end)
+                    // Add the last 'elif' part (to the end)
                     if (!empty($positions)) {
                         $lastPos = end($positions) + strlen(end($elifMatches[0])[0]);
                         $parts[] = substr($mainParts[0], $lastPos);

@@ -6,6 +6,7 @@ use ByJG\JinjaPhp\Exception\TemplateParseException;
 use ByJG\JinjaPhp\Template;
 use ByJG\JinjaPhp\Undefined\DefaultUndefined;
 use ByJG\JinjaPhp\Undefined\UndefinedInterface;
+use Override;
 
 /**
  * Evaluator for filter expressions using the pipe (|) operator
@@ -13,24 +14,18 @@ use ByJG\JinjaPhp\Undefined\UndefinedInterface;
 class FilterEvaluator extends AbstractEvaluator
 {
     /**
-     * @var Template Reference to the template for filter application
-     */
-    private Template $template;
-    
-    /**
      * @param EvaluatorChain $evaluatorChain The evaluator chain
      * @param Template $template The template instance
      */
     public function __construct(EvaluatorChain $evaluatorChain, Template $template) 
     {
         parent::__construct($evaluatorChain);
-        $this->template = $template;
     }
     
     /**
      * {@inheritdoc}
      */
-    #[\Override]
+    #[Override]
     public function canEvaluate(string $content): bool
     {
         return str_contains($content, ' | ');
@@ -40,7 +35,7 @@ class FilterEvaluator extends AbstractEvaluator
      * {@inheritdoc}
      * @throws TemplateParseException
      */
-    #[\Override]
+    #[Override]
     public function evaluate(string $content, array $variables, ?UndefinedInterface $undefined = null): mixed
     {
         return $this->applyFilter(explode(" | ", $content), $variables, $undefined);

@@ -4,6 +4,7 @@ namespace ByJG\JinjaPhp\Evaluator;
 
 use ByJG\JinjaPhp\Exception\TemplateParseException;
 use ByJG\JinjaPhp\Undefined\UndefinedInterface;
+use Override;
 
 /**
  * Evaluator for string concatenation using the tilde (~) operator
@@ -13,7 +14,7 @@ class ConcatenationEvaluator extends AbstractEvaluator
     /**
      * {@inheritdoc}
      */
-    #[\Override]
+    #[Override]
     public function canEvaluate(string $content): bool
     {
         return preg_match('/\s*~\s*/', $content) === 1;
@@ -23,7 +24,7 @@ class ConcatenationEvaluator extends AbstractEvaluator
      * {@inheritdoc}
      * @throws TemplateParseException
      */
-    #[\Override]
+    #[Override]
     public function evaluate(string $content, array $variables, ?UndefinedInterface $undefined = null): mixed
     {
         $array = preg_split('/\s*~\s*/', $content);

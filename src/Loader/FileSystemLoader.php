@@ -4,6 +4,7 @@ namespace ByJG\JinjaPhp\Loader;
 
 use ByJG\JinjaPhp\Template;
 use InvalidArgumentException;
+use Override;
 
 class FileSystemLoader implements LoaderInterface
 {
@@ -44,7 +45,7 @@ class FileSystemLoader implements LoaderInterface
      * @param string $template
      * @return Template
      */
-    #[\Override]
+    #[Override]
     public function getTemplate(string $template): Template
     {
         $filename = $this->path . DIRECTORY_SEPARATOR . $template;

@@ -2,11 +2,13 @@
 
 namespace ByJG\JinjaPhp\Undefined;
 
+use Override;
+
 class DebugUndefined implements UndefinedInterface
 {
         protected string $message = 'NOT_FOUND';
 
-        #[\Override]
+        #[Override]
         public function render(string $varName): string
         {
             return "{{ $this->message: $varName }}";

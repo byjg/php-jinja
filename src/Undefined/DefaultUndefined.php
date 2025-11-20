@@ -2,6 +2,8 @@
 
 namespace ByJG\JinjaPhp\Undefined;
 
+use Override;
+
 class DefaultUndefined implements UndefinedInterface
 {
     protected string $default = '';
@@ -11,7 +13,7 @@ class DefaultUndefined implements UndefinedInterface
         $this->default = $default;
     }
 
-    #[\Override]
+    #[Override]
     public function render(string $varName): string
     {
         return $this->default;

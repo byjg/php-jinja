@@ -60,16 +60,14 @@ abstract class AbstractEvaluator implements EvaluatorInterface
         if (is_bool($valueToEvaluate)) {
             return $valueToEvaluate;
         }
-        
+
         // Arrays should be returned as is
         if (is_array($valueToEvaluate)) {
             return $valueToEvaluate;
         }
 
         // Use PHP's eval function to evaluate the final expression
-        $evalResult = null;
-        eval("\$evalResult = $valueToEvaluate;");
-        return $evalResult;
+        return eval("return $valueToEvaluate;");
     }
 
     /**

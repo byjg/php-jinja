@@ -4,6 +4,7 @@ namespace ByJG\JinjaPhp\Evaluator;
 
 use ByJG\JinjaPhp\Exception\TemplateParseException;
 use ByJG\JinjaPhp\Undefined\UndefinedInterface;
+use Override;
 
 /**
  * Evaluator for array declarations using [key: value] syntax
@@ -13,7 +14,7 @@ class ArrayEvaluator extends AbstractEvaluator
     /**
      * {@inheritdoc}
      */
-    #[\Override]
+    #[Override]
     public function canEvaluate(string $content): bool
     {
         return preg_match('/^\[.*\]$/', $content) === 1;
@@ -23,7 +24,7 @@ class ArrayEvaluator extends AbstractEvaluator
      * {@inheritdoc}
      * @throws TemplateParseException
      */
-    #[\Override]
+    #[Override]
     public function evaluate(string $content, array $variables, ?UndefinedInterface $undefined = null): mixed
     {
         $array = preg_split('/\s*,\s*/', trim($content, "[]"));

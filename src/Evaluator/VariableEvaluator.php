@@ -2,8 +2,10 @@
 
 namespace ByJG\JinjaPhp\Evaluator;
 
+use ByJG\JinjaPhp\Exception\TemplateParseException;
 use ByJG\JinjaPhp\Template;
 use ByJG\JinjaPhp\Undefined\UndefinedInterface;
+use Override;
 
 /**
  * Evaluator for variable references
@@ -28,18 +30,20 @@ class VariableEvaluator extends AbstractEvaluator
     /**
      * {@inheritdoc}
      */
-    #[\Override]
+    #[Override]
     public function canEvaluate(string $content): bool
     {
         // This evaluator is a fallback, returns true for any content
         // that wasn't handled by other evaluators
         return true;
     }
-    
+
     /**
      * {@inheritdoc}
+     * @throws TemplateParseException
+     * @throws TemplateParseException
      */
-    #[\Override]
+    #[Override]
     public function evaluate(string $content, array $variables, ?UndefinedInterface $undefined = null): mixed
     {
         // Handle negation operator
