@@ -26,8 +26,39 @@ jobs:
       - uses: actions/checkout@v5
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - run: composer install
-      - run: composer psalm
       - run: composer test
+
+  Psalm:
+    name: Psalm Static Analyzer
+    runs-on: ubuntu-latest
+    permissions:
+      # for github/codeql-action/upload-sarif to upload SARIF results
+      security-events: write
+    container:
+      image: byjg/php:8.4-cli
+      options: --user root --privileged
+
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v4
+
+      - name: Git config safe directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Composer
+        run: composer install
+
+      - name: Psalm
+        # Note: Ignoring error code 2, which just signals that some
+        # flaws were found, not that Psalm itself failed to run.
+        run: ./vendor/bin/psalm
+          --show-info=true
+          --report=psalm-results.sarif || [ $? = 2 ]
+
+      - name: Upload Analysis results to GitHub
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: psalm-results.sarif
 
   Documentation:
     if: github.ref == 'refs/heads/master'
