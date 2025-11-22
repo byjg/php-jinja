@@ -29,9 +29,17 @@ class ArrayEvaluator extends AbstractEvaluator
     {
         $array = preg_split('/\s*,\s*/', trim($content, "[]"));
         $result = [];
-        
+
+        if ($array === false) {
+            return [];
+        }
+
         foreach ($array as $i => $item) {
             $arData = preg_split('/\s*:\s*/', $item);
+
+            if ($arData === false) {
+                continue;
+            }
             
             // Handle key:value pairs
             if (count($arData) == 2) {
