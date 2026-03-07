@@ -1,4 +1,10 @@
+---
+tags: [php, text-manipulation, template]
+---
+
 # Jinja for PHP
+
+Lightweight PHP implementation of the [Jinja2](https://jinja.palletsprojects.com/) template engine originally developed for Python.
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%23ea4aaa?logo=githubsponsors&logoColor=white&labelColor=0d1117)](https://github.com/sponsors/byjg)
 [![Build Status](https://github.com/byjg/php-jinja/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/byjg/php-jinja/actions/workflows/phpunit.yml)
@@ -6,8 +12,6 @@
 [![GitHub source](https://img.shields.io/badge/Github-source-informational?logo=github)](https://github.com/byjg/php-jinja/)
 [![GitHub license](https://img.shields.io/github/license/byjg/php-jinja.svg)](https://opensource.byjg.com/opensource/licensing.html)
 [![GitHub release](https://img.shields.io/github/release/byjg/php-jinja.svg)](https://github.com/byjg/uri/releases/)
-
-Lightweight PHP implementation of the [Jinja2](https://jinja.palletsprojects.com/) template engine originally developed for Python.
 
 ## Overview
 
@@ -46,15 +50,15 @@ echo $template->render($variables);
 
 The detailed documentation is organized as follows:
 
-1. [Basic Usage](docs/basic-usage.md)
-2. [Template Syntax](docs/template-syntax.md)
-3. [Loaders](docs/loaders.md)
-4. [Undefined Variables](docs/undefined-variables.md)
-5. [Filters](docs/filters.md)
-6. [Control Structures](docs/control-structures.md)
-7. [Advanced Topics](docs/advanced-topics.md)
-8. [API Reference](docs/api.md)
-9. [PHP Jinja vs Python Jinja2 Comparison](docs/comparison.md)
+1. [Basic Usage](basic-usage)
+2. [Template Syntax](template-syntax)
+3. [Loaders](loaders)
+4. [Undefined Variables](undefined-variables)
+5. [Filters](filters)
+6. [Control Structures](control-structures)
+7. [Advanced Topics](advanced-topics)
+8. [API Reference](api)
+9. [PHP Jinja vs Python Jinja2 Comparison](comparison)
 
 ## Installation
 
