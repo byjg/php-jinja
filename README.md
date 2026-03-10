@@ -1,4 +1,11 @@
+---
+sidebar_key: jinja
+tags: [php, text-manipulation, template]
+---
+
 # Jinja for PHP
+
+Lightweight PHP implementation of the [Jinja2](https://jinja.palletsprojects.com/) template engine originally developed for Python.
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%23ea4aaa?logo=githubsponsors&logoColor=white&labelColor=0d1117)](https://github.com/sponsors/byjg)
 [![Build Status](https://github.com/byjg/php-jinja/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/byjg/php-jinja/actions/workflows/phpunit.yml)
@@ -6,8 +13,6 @@
 [![GitHub source](https://img.shields.io/badge/Github-source-informational?logo=github)](https://github.com/byjg/php-jinja/)
 [![GitHub license](https://img.shields.io/github/license/byjg/php-jinja.svg)](https://opensource.byjg.com/opensource/licensing.html)
 [![GitHub release](https://img.shields.io/github/release/byjg/php-jinja.svg)](https://github.com/byjg/uri/releases/)
-
-Lightweight PHP implementation of the [Jinja2](https://jinja.palletsprojects.com/) template engine originally developed for Python.
 
 ## Overview
 
