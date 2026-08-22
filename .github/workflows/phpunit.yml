@@ -18,6 +18,7 @@ jobs:
     strategy:
       matrix:
         php-version:
+          - "8.6"
           - "8.5"
           - "8.4"
           - "8.3"
@@ -35,7 +36,7 @@ jobs:
       # for github/codeql-action/upload-sarif to upload SARIF results
       security-events: write
     container:
-      image: byjg/php:8.4-cli
+      image: byjg/php:8.5-cli
       options: --user root --privileged
 
     steps:
