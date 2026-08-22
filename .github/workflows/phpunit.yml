@@ -49,10 +49,13 @@ jobs:
       - name: Composer
         run: composer install
 
+      - name: Composer (psalm)
+        run: composer --working-dir=tools/psalm update --no-interaction
+
       - name: Psalm
         # Note: Ignoring error code 2, which just signals that some
         # flaws were found, not that Psalm itself failed to run.
-        run: ./vendor/bin/psalm
+        run: ./tools/psalm/vendor/bin/psalm
           --show-info=true
           --report=psalm-results.sarif || [ $? = 2 ]
 
