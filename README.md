@@ -11,7 +11,7 @@ Lightweight PHP implementation of the [Jinja2](https://jinja.palletsprojects.com
 [![Build Status](https://github.com/byjg/php-jinja/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/byjg/php-jinja/actions/workflows/phpunit.yml)
 [![Opensource ByJG](https://img.shields.io/badge/opensource-byjg-success.svg)](http://opensource.byjg.com)
 [![GitHub source](https://img.shields.io/badge/Github-source-informational?logo=github)](https://github.com/byjg/php-jinja/)
-[![GitHub license](https://img.shields.io/github/license/byjg/php-jinja.svg)](https://opensource.byjg.com/opensource/licensing.html)
+[![GitHub license](https://img.shields.io/github/license/byjg/php-jinja.svg)](https://opensource.byjg.com/license/)
 [![GitHub release](https://img.shields.io/github/release/byjg/php-jinja.svg)](https://github.com/byjg/uri/releases/)
 
 ## Overview
@@ -65,13 +65,6 @@ The detailed documentation is organized as follows:
 
 ```bash
 composer require byjg/jinja-php
-```
-
-## Dependencies
-
-```mermaid  
-flowchart TD  
-    byjg/jinja-php   
 ```
 
 ----  
