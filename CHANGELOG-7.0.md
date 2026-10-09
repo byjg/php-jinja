@@ -15,21 +15,26 @@
 ## Toolchain
 
 - PHPUnit updated to `^12.5`.
-- Psalm updated to `^6.16`.
+- Psalm is installed as `psalm/phar` (`^6.16`) instead of `vimeo/psalm`.
+
+  `vimeo/psalm` lists the PHP versions it supports and no published release includes
+  8.6, so as a dev dependency it made `composer install` fail on the 8.6 build job
+  before any test ran. `psalm/phar` requires only `php ^8.2` and bundles its own
+  dependencies, so it installs on every PHP version in the matrix and cannot conflict
+  with the project's. Psalm itself still refuses to *run* on 8.6, which is why the
+  Psalm job uses 8.5. `composer psalm` runs it.
 
   PHPUnit 13 is deliberately **not** used. It requires PHP `>=8.4.1`, which would
-  break the 8.3 floor, and it pulls `sebastian/diff ^9.0`, which the newest stable
-  Psalm (6.16.1) does not accept — that combination silently resolves Psalm to an
-  unreleased `6.x-dev` branch. Pinning PHPUnit to `^12.5` keeps a single stable
-  PHPUnit and a single stable Psalm across the whole matrix.
+  break the 8.3 floor.
 
 ## Continuous Integration
 
 - The build matrix now includes PHP 8.6.
-- The Psalm job now runs on PHP 8.5. Psalm 6.16.1 declares
-  `~8.1.31 || ~8.2.27 || ~8.3.16 || ~8.4.3 || ~8.5.0` and therefore cannot be
-  installed on PHP 8.6.
+- The Psalm job now runs on PHP 8.5. Psalm declares
+  `~8.1.31 || ~8.2.27 || ~8.3.16 || ~8.4.3 || ~8.5.0` and therefore does not run on
+  PHP 8.6.
 
 ## Housekeeping
 
 - `phpunit.xml.dist` renamed to `phpunit.xml`.
+- Added the `LICENSE` file (MIT); the license was already declared in `composer.json`.
