@@ -2,8 +2,8 @@
 
 namespace ByJG\JinjaPhp\Loader;
 
+use ByJG\JinjaPhp\Exception\LoaderException;
 use ByJG\JinjaPhp\Template;
-use InvalidArgumentException;
 use Override;
 
 class FileSystemLoader implements LoaderInterface
@@ -29,15 +29,15 @@ class FileSystemLoader implements LoaderInterface
         $this->extension = $extension;
 
         if (!is_dir($this->path)) {
-            throw new InvalidArgumentException("The path '$this->path' is not a valid directory.");
+            throw new LoaderException("The path '$this->path' is not a valid directory.");
         }
 
         if (!is_readable($this->path)) {
-            throw new InvalidArgumentException("The path '$this->path' is not readable.");
+            throw new LoaderException("The path '$this->path' is not readable.");
         }
 
         if (!file_exists($this->path)) {
-            throw new InvalidArgumentException("The path '$this->path' does not exist.");
+            throw new LoaderException("The path '$this->path' does not exist.");
         }
     }
 
@@ -53,10 +53,14 @@ class FileSystemLoader implements LoaderInterface
             $filename .= $this->extension;
         }
 
-        if (!file_exists($filename)) {
-            throw new InvalidArgumentException("The template '$filename' does not exist.");
+        // The file has to be inside the templates directory once the path is resolved, so a name
+        // with "../" cannot reach anything else. A missing file gives the same answer.
+        $realFilename = realpath($filename);
+        $realPath = rtrim((string)realpath($this->path), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        if ($realFilename === false || !str_starts_with($realFilename, $realPath)) {
+            throw new LoaderException("The template '$filename' does not exist.");
         }
 
-        return new Template(file_get_contents($filename));
+        return new Template((string)file_get_contents($realFilename));
     }
 }

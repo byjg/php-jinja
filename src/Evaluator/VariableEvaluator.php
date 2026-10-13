@@ -54,7 +54,8 @@ class VariableEvaluator extends AbstractEvaluator
         // Handle variable access
         $var = $this->template->getVar($content, $variables, $undefined);
         
-        if (is_array($var)) {
+        // An array and a boolean keep their type; everything else is handled as a string
+        if (is_array($var) || is_bool($var)) {
             return $var;
         }
         

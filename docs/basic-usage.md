@@ -63,8 +63,7 @@ User info:
 - Age: {{ user.age }}
 
 Items:
-{% for item in items %}
-- {{ item }}
+{% for item in items %}- {{ item }}
 {% endfor %}
 EOT;
 

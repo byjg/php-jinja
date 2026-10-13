@@ -9,10 +9,11 @@ Lightweight PHP implementation of the [Jinja2](https://jinja.palletsprojects.com
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%23ea4aaa?logo=githubsponsors&logoColor=white&labelColor=0d1117)](https://github.com/sponsors/byjg)
 [![Build Status](https://github.com/byjg/php-jinja/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/byjg/php-jinja/actions/workflows/phpunit.yml)
-[![Opensource ByJG](https://img.shields.io/badge/opensource-byjg-success.svg)](http://opensource.byjg.com)
+[![Opensource ByJG](https://img.shields.io/badge/opensource-byjg-success.svg)](https://opensource.byjg.com)
+[![Install MCP Server](https://img.shields.io/badge/Install-MCP_Server-8A2BE2?logo=modelcontextprotocol&logoColor=white)](https://opensource.byjg.com/docs/ai/mcpserver-byjg-docs/)
 [![GitHub source](https://img.shields.io/badge/Github-source-informational?logo=github)](https://github.com/byjg/php-jinja/)
-[![GitHub license](https://img.shields.io/github/license/byjg/php-jinja.svg)](https://opensource.byjg.com/opensource/licensing.html)
-[![GitHub release](https://img.shields.io/github/release/byjg/php-jinja.svg)](https://github.com/byjg/uri/releases/)
+[![GitHub license](https://img.shields.io/github/license/byjg/php-jinja.svg)](https://opensource.byjg.com/license/)
+[![GitHub release](https://img.shields.io/github/release/byjg/php-jinja.svg)](https://github.com/byjg/php-jinja/releases/)
 
 ## Overview
 
@@ -22,7 +23,7 @@ This library allows you to seamlessly process Jinja templates in PHP application
 
 - **Python Compatibility**: Process the same Jinja templates in both Python and PHP
 - **Variable Support**: Full support for variables, properties, and nested structures
-- **Conditional Logic**: `if`/`else` statements for conditional rendering
+- **Conditional Logic**: `if`/`elif`/`else` statements for conditional rendering
 - **Loops**: Iterate over arrays and objects with `for` loops
 - **Filters**: Transform output with built-in filters like `upper`, `lower`, `default`, etc.
 - **Flexible Loaders**: Load templates from strings or the filesystem
@@ -47,6 +48,7 @@ $variables = [
 ];
 echo $template->render($variables);
 ```
+
 ## Documentation
 
 The detailed documentation is organized as follows:
@@ -67,12 +69,11 @@ The detailed documentation is organized as follows:
 composer require byjg/jinja-php
 ```
 
-## Dependencies
+## Running Tests
 
-```mermaid  
-flowchart TD  
-    byjg/jinja-php   
+```bash
+vendor/bin/phpunit
 ```
 
-----  
-[Open source ByJG](http://opensource.byjg.com)
+----
+[Open source ByJG](https://opensource.byjg.com)

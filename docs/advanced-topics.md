@@ -19,6 +19,24 @@ PHP-Jinja is a lightweight implementation of Jinja2 for PHP applications with th
 
 3. **No Template Inheritance**: Features like `extends`, `block`, and `include` are not supported.
 
+4. **`else` and `elif` only at the top level**: they work in an `if` that is not inside another
+   block. In a nested `if`, or in an `if` inside a `for`, an `{% else %}` or `{% elif %}` breaks
+   the template. Use separate `if` blocks with opposite conditions.
+
+5. **`for ... else` only on the outermost loop**: an `else` on an inner loop is an error.
+
+6. **Whitespace control only on opening tags**: `{%- if ... -%}` and `{%- for ... -%}`. A minus
+   sign on `{% else %}`, `{% elif %}`, `{% endif %}` or `{% endfor %}` is an error.
+
+7. **No ternary operator**: `a ? b : c` is not understood.
+
+8. **`not` is written `!`**: `and` and `or` work as words, `not` does not.
+
+9. **Commas in filter arguments**: an argument with a comma has to be in single quotes
+   (`join(', ')`), and `replace` cannot take one at all. The pipe needs a space on each side.
+
+10. **Unknown filters are ignored** rather than reported.
+
 ## Handling Undefined Variables
 
 PHP-Jinja provides three strategies for handling undefined variables:
@@ -67,19 +85,13 @@ While template inheritance is not supported, you can compose templates by render
 ```php
 <?php
 use ByJG\JinjaPhp\Loader\FileSystemLoader;
-use ByJG\JinjaPhp\Template;
 
-$loader = new FileSystemLoader('/path/to/templates');
+$loader = new FileSystemLoader('/path/to/templates', '.html');
 
 // Render separate template parts
-$headerTemplate = new Template($loader->getSource('header.html'));
-$header = $headerTemplate->render(['title' => 'Page Title']);
-
-$bodyTemplate = new Template($loader->getSource('content.html'));
-$body = $bodyTemplate->render(['content' => 'Main content']);
-
-$footerTemplate = new Template($loader->getSource('footer.html'));
-$footer = $footerTemplate->render(['year' => date('Y')]);
+$header = $loader->getTemplate('header')->render(['title' => 'Page Title']);
+$body = $loader->getTemplate('content')->render(['content' => 'Main content']);
+$footer = $loader->getTemplate('footer')->render(['year' => date('Y')]);
 
 // Combine the parts
 echo $header . $body . $footer;
@@ -99,8 +111,8 @@ $baseVariables = [
 ];
 
 // Create templates
-$template1 = new Template($loader->getSource('template1.html'));
-$template2 = new Template($loader->getSource('template2.html'));
+$template1 = $loader->getTemplate('template1');
+$template2 = $loader->getTemplate('template2');
 
 // Render with combined variables
 echo $template1->render($baseVariables + ['page' => 'Home']);
@@ -115,14 +127,15 @@ Be careful when loading templates based on user input:
 
 ```php
 <?php
-// INSECURE - could allow directory traversal
+// INSECURE - the visitor chooses any template in the directory
+// (a name that leaves the directory is refused by FileSystemLoader)
 $templateName = $_GET['template'];
-$template = $loader->getSource($templateName);
+$template = $loader->getTemplate($templateName);
 
 // SECURE - use a whitelist approach
 $allowedTemplates = ['home', 'about', 'contact'];
 if (in_array($_GET['template'], $allowedTemplates)) {
-    $template = $loader->getSource($_GET['template'] . '.html');
+    $template = $loader->getTemplate($_GET['template']);
 }
 ```
 

@@ -42,27 +42,36 @@ Control whitespace around if statements with the minus sign:
 <div>
     {%- if showHeader -%}
         <header>Compact header with no whitespace around it</header>
-    {%- endif -%}
+    {% endif %}
 </div>
 ```
 
-Without `-` characters, extra whitespace could appear in the output.
+`{%-` removes the whitespace at the beginning of the content of the block and `-%}` removes it at
+the end. Put the minus sign on the opening tag only; on `{% endif %}`, `{% else %}` or `{% elif %}`
+it is an error.
 
 ### Nested Conditionals
+
+An `if` can be nested in another, as long as the inner one has no `else` or `elif`:
 
 ```jinja
 {% if user %}
     {% if user.isAdmin %}
         <span class="badge admin">Admin: {{ user.name }}</span>
-    {% elif user.isModerator %}
+    {% endif %}
+    {% if user.isModerator %}
         <span class="badge mod">Moderator: {{ user.name }}</span>
-    {% else %}
-        <span class="badge user">User: {{ user.name }}</span>
     {% endif %}
 {% else %}
     <span class="badge guest">Guest</span>
 {% endif %}
 ```
+
+:::caution
+`{% else %}` and `{% elif %}` are only understood in an `if` that is not inside another block.
+In a nested `if`, or in an `if` inside a `for`, an `{% else %}` breaks the template. Write the
+alternatives as separate `if` blocks with opposite conditions, as above.
+:::
 
 ## Loops (For Statements)
 
@@ -83,7 +92,7 @@ The `loop` variable provides metadata about the current iteration:
 ```jinja
 <table class="data-table">
     {% for user in users %}
-        <tr class="{{ loop.index0 % 2 == 0 ? 'even' : 'odd' }}">
+        <tr class="{% if loop.even %}even{% endif %}{% if loop.odd %}odd{% endif %}">
             <td>{{ loop.index }}</td>
             <td>{{ user.name }}</td>
             {% if loop.first %}
@@ -105,8 +114,10 @@ Available loop properties:
 - `loop.length`: Total number of items
 - `loop.revindex`: Reverse index (starts at loop.length)
 - `loop.revindex0`: Reverse index (starts at loop.length - 1)
-- `loop.even`: True if index is even
-- `loop.odd`: True if index is odd
+- `loop.even`: True on the first, third, fifth… iteration (`loop.index0` is even)
+- `loop.odd`: True on the second, fourth… iteration
+
+There is no ternary operator (`a ? b : c`); use an `if` block.
  
 ### Conditional Display with Empty Collections
 
@@ -139,6 +150,8 @@ Available loop properties:
 
 ### Data Table with Conditional Formatting
 
+Inside a loop, each alternative is its own `if`, because `else` is not available there:
+
 ```jinja
 <table>
     <thead>
@@ -156,11 +169,11 @@ Available loop properties:
                 <td>
                     {% if student.score >= 90 %}
                         <span class="status excellent">Excellent</span>
-                    {% elif student.score >= 75 %}
-                        <span class="status good">Good</span>
-                    {% elif student.score >= 60 %}
+                    {% endif %}
+                    {% if student.score >= 60 && student.score < 90 %}
                         <span class="status pass">Pass</span>
-                    {% else %}
+                    {% endif %}
+                    {% if student.score < 60 %}
                         <span class="status fail">Fail</span>
                     {% endif %}
                 </td>

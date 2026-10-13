@@ -43,18 +43,28 @@ PHP-Jinja provides classes for loading templates from different sources.
 use ByJG\JinjaPhp\Loader\FileSystemLoader;
 
 // Constructor
-$loader = new FileSystemLoader(string $basePath);
+$loader = new FileSystemLoader(string $path, string $extension = '.jinja');
 
 // Methods
-$loader->getSource(string $name): string;  // Load a template file
+$loader->getTemplate(string $template): Template;  // Load a template file
 ```
 
 #### Example
 
 ```php
 $loader = new FileSystemLoader('/path/to/templates');
-$templateString = $loader->getSource('my-template.html');
-$template = new Template($templateString);
+$template = $loader->getTemplate('my-template');  // my-template.jinja
+echo $template->render(['name' => 'World']);
+```
+
+#### StringLoader
+
+```php
+<?php
+use ByJG\JinjaPhp\Loader\StringLoader;
+
+$loader = new StringLoader();
+$template = $loader->getTemplate('Hello {{ name }}!');  // the string is the template
 ```
 
 ### Undefined Variable Handlers
@@ -87,7 +97,7 @@ namespace ByJG\JinjaPhp\Loader;
 
 interface LoaderInterface
 {
-    public function getSource(string $name): string;
+    public function getTemplate(string $template): Template;
 }
 ```
 
@@ -108,7 +118,8 @@ interface UndefinedInterface
 PHP-Jinja may throw the following exceptions:
 
 - `TemplateParseException`: When a template cannot be parsed or a variable is not found (with StrictUndefined)
-- `LoaderException`: When a template file cannot be loaded
+- `LoaderException`: When the templates directory or a template file cannot be loaded. It extends
+  `InvalidArgumentException`
 
 ## Feature Reference
 
@@ -122,7 +133,7 @@ PHP-Jinja may throw the following exceptions:
 | Loops | For loops | `{% for item in items %}...{% endfor %}` |
 | Filters | Transform variables | `{{ variable \| filter }}` |
 | Comments | Non-rendered notes | `{# Comment #}` |
-| Whitespace Control | Control whitespace in output | `{%- if condition -%}...{%- endif -%}` |
+| Whitespace Control | Trim the content of a block, on the opening tag | `{%- if condition -%}...{% endif %}` |
 
 ### Available Filters
 
