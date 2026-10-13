@@ -35,10 +35,14 @@ Access variables using the double curly braces:
 {{ 42 }}                      <!-- Integer -->
 {{ 3.14 }}                    <!-- Float -->
 {{ "hello" }} or {{ 'hello' }} <!-- Strings -->
-{{ true }}, {{ false }}       <!-- Booleans -->
-{{ [1, 2, 3] }}               <!-- Array -->
-{{ ['a': 1, 'b': 2] }}        <!-- Associative array -->
+{{ true }}, {{ false }}       <!-- Booleans: printed as true and false -->
+{{ [1, 2, 3] }}               <!-- Array: printed as JSON, [1,2,3] -->
+{{ ['a': 1, 'b': 2] }}        <!-- Associative array: printed as JSON, {"a":1,"b":2} -->
 ```
+
+A boolean is printed as the word `true` or `false`, and an array as JSON, when it is the whole
+result of the expression. Inside a concatenation or a string filter a boolean is still `1` or
+empty: `{{ true ~ "!" }}` prints `1!`.
 
 ### Operators
 
@@ -101,13 +105,20 @@ Access variables using the double curly braces:
 {% endif %}
 ```
 
-Whitespace control:
+Whitespace control, with a minus sign on the opening tag:
 
 ```jinja
 {%- if condition -%}
     Content without whitespace before or after
-{%- endif -%}
+{% endif %}
 ```
+
+`{%-` removes the whitespace at the beginning of the block's content and `-%}` removes it at the
+end. The minus sign is only understood on the opening `if` and `for` tags: on `{% else %}`,
+`{% elif %}`, `{% endif %}` or `{% endfor %}` it is an error.
+
+`{% else %}` and `{% elif %}` belong to the outermost block they are written in. See
+[the limitations](advanced-topics.md#current-limitations) before nesting an `if` that has them.
 
 ### Loops
 
@@ -162,20 +173,12 @@ Examples:
 {% endfor %}
 ```
 
-Whitespace control can be used with for-else loops as well:
+Whitespace control can be used with for-else loops as well, on the opening tag:
 
 ```jinja
-{# Trim whitespace after the opening for tag #}
 {% for item in items -%}
     {{ item }}
 {% else %}
-    No items
-{% endfor %}
-
-{# Trim whitespace before the else tag #}
-{% for item in items %}
-    {{ item }}
-{%- else %}
     No items
 {% endfor %}
 ```
@@ -191,6 +194,9 @@ Loop variables:
     {{ loop.length }}  <!-- total number of items -->
 {% endfor %}
 ```
+
+To get the key as well, name two variables: `{% for key, value in items %}`.
+
 ### Nested For Loops
 
 For loops can be nested inside each other:
@@ -204,7 +210,7 @@ For loops can be nested inside each other:
 {% endfor %}
 ```
 
-For-else blocks can be used in nested structures, but with some limitations:
+A for-else block can contain a nested loop:
 
 ```jinja
 {% for category in categories %}
@@ -217,7 +223,7 @@ For-else blocks can be used in nested structures, but with some limitations:
 {% endfor %}
 ```
 
-> **Note**: Currently, the template engine supports `else` clauses in outer for loops but has limited support for `else` clauses in inner for loops. For best results, use for-else only on the outermost loop level.
+> **Note**: An `else` clause is only supported on the outermost `for`. On an inner loop it is an error.
 
 ## Comments
 
@@ -225,4 +231,10 @@ Add comments that are not rendered in the output:
 
 ```jinja
 {# This is a comment that won't appear in the output #}
-``` 
+
+{#
+   A comment can span several lines, and whatever is inside it
+   is not template code: {{ this_is_not_evaluated }}
+#}
+```
+

@@ -23,7 +23,7 @@ This library allows you to seamlessly process Jinja templates in PHP application
 
 - **Python Compatibility**: Process the same Jinja templates in both Python and PHP
 - **Variable Support**: Full support for variables, properties, and nested structures
-- **Conditional Logic**: `if`/`else` statements for conditional rendering
+- **Conditional Logic**: `if`/`elif`/`else` statements for conditional rendering
 - **Loops**: Iterate over arrays and objects with `for` loops
 - **Filters**: Transform output with built-in filters like `upper`, `lower`, `default`, etc.
 - **Flexible Loaders**: Load templates from strings or the filesystem
@@ -48,6 +48,7 @@ $variables = [
 ];
 echo $template->render($variables);
 ```
+
 ## Documentation
 
 The detailed documentation is organized as follows:
@@ -74,5 +75,5 @@ composer require byjg/jinja-php
 vendor/bin/phpunit
 ```
 
-----  
+----
 [Open source ByJG](https://opensource.byjg.com)

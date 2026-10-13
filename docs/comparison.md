@@ -20,17 +20,18 @@ This document provides a comparison between PHP Jinja implementation and Python'
 | Mixed notation (`user.items[0].name`)     | ✅ Yes         | ✅ Yes           |
 | Math operations                           | ✅ Yes         | ✅ Yes           |
 | String concatenation (`~`)                | ✅ Yes         | ✅ Yes           |
-| Boolean operations                        | ✅ Yes         | ✅ Yes           |
+| Boolean operations                        | ✅ `&&`, `\|\|`, `!`, `and`, `or` (no `not`) | ✅ Yes |
 | Comparison operators                      | ✅ Yes         | ✅ Yes           |
 |                                           |               |                 |
 | **Control Structures**                    |               |                 |
-| If/elif/else/endif                        | ✅ Yes         | ✅ Yes           |
+| If/elif/else/endif                        | ⚠️ `else`/`elif` only in a top-level `if` | ✅ Yes |
 | For loops                                 | ✅ Yes         | ✅ Yes           |
-| For loop else clause                      | ✅ Yes         | ✅ Yes           |
+| For loop else clause                      | ⚠️ Outermost loop only | ✅ Yes   |
 | Loop variables (index, first, last, etc.) | ✅ Yes         | ✅ Yes           |
 | Loop controls (break, continue)           | ❌ No          | ✅ Yes           |
 | Nested loops                              | ✅ Yes         | ✅ Yes           |
-| Whitespace control (`{%-` and `-%}`)      | ✅ Yes         | ✅ Yes           |
+| Whitespace control (`{%-` and `-%}`)      | ⚠️ Opening `if`/`for` tags only | ✅ Yes |
+| Ternary / inline `if`                     | ❌ No          | ✅ Yes           |
 |                                           |               |                 |
 | **Filters**                               |               |                 |
 | Built-in filters                          | ✅ Limited set | ✅ Extensive set |

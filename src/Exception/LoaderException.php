@@ -2,8 +2,8 @@
 
 namespace ByJG\JinjaPhp\Exception;
 
-use Exception;
+use InvalidArgumentException;
 
-class LoaderException extends Exception
+class LoaderException extends InvalidArgumentException
 {
 }

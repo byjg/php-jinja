@@ -3,9 +3,40 @@
 > **Status: in development.** This document tracks changes landing on the `7.0` branch.
 > Nothing here is released yet, and the contents may still change.
 
+## New Features
+
+- **Comments.** `{# ... #}` is removed from the output. It was documented but not implemented: the
+  comment was printed as it was written. A comment can span lines, and what is inside it is not
+  evaluated.
+
 ## Breaking Changes
 
-- None.
+- **A boolean is printed as `true` or `false`.** `{{ 1 == 2 }}`, `{{ flag }}` and `{{ loop.first }}`
+  printed `1` for true and nothing at all for false. Conditions are not affected: `{% if flag %}`
+  behaves as before. Inside a concatenation or a string filter a boolean is still `1` or empty.
+- **`default` no longer replaces a variable that is `false`.** A `false` variable used to reach the
+  filter as an empty string; `{{ flag | default("x") }}` now prints `false`.
+- **An array is printed as JSON.** `{{ items }}` and `{{ "a-b" | split("-") }}` print
+  `["a","b"]`. They used to raise PHP's "Array to string conversion" warning and print `Array`.
+- **`FileSystemLoader` throws `LoaderException`** for a directory or a template that cannot be
+  loaded. `LoaderException` now extends `InvalidArgumentException`, which is what was thrown
+  before, so a `catch (InvalidArgumentException)` keeps working. Code that caught
+  `LoaderException` as a plain `Exception` subclass is not affected either.
+
+- **`FileSystemLoader` only loads from its own directory.** A template name is joined to the
+  directory, so `../` in a name used to load a file from somewhere else. The loader now resolves
+  the path and refuses a file outside the directory with the same `LoaderException` as a missing
+  template. Names in subdirectories keep working. A symbolic link inside the directory that points
+  outside it is refused as well.
+
+## Documentation
+
+- The loader pages documented a `getSource()` method that does not exist. They now describe
+  `getTemplate()`, the `.jinja` default extension and `StringLoader`.
+- Examples that did not run were corrected, and the constructs the engine does not support are
+  listed in [Current Limitations](docs/advanced-topics.md#current-limitations): `else`/`elif`
+  inside a nested block, `else` on an inner loop, whitespace control on closing tags, the ternary
+  operator, `not`, and commas in filter arguments.
 
 ## Requirements
 
