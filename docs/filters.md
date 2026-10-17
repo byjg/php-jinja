@@ -26,12 +26,14 @@ Some filters accept arguments:
 {{ variable | filter(arg1, arg2) }}
 ```
 
-Three rules of this implementation:
+Four rules of this implementation:
 
 - Write the pipe with a space on each side: `{{ name | upper }}`, not `{{ name|upper }}`.
 - An argument that contains a comma has to be in single quotes: `join(', ')`, not `join(", ")`.
   With two arguments, as in `replace`, neither can contain a comma.
 - A filter that does not exist is ignored: the value passes through unchanged.
+- `default` works only as the first filter: `{{ name | default("Guest") | upper }}`. Later in the
+  chain it is ignored, and an undefined variable is handled by the template's undefined handler.
 
 ## Available Filters
 
