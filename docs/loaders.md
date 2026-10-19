@@ -4,41 +4,69 @@ sidebar_position: 3
 
 # Template Loaders
 
-PHP-Jinja provides flexible ways to load templates from different sources.
+A loader gives you a `Template` from a name. PHP-Jinja comes with two, and you can write your own.
 
 ## Built-in Loaders
 
-PHP-Jinja comes with two primary methods for loading templates:
+### Using a String Directly
 
-### 1. Direct String Usage
-
-The simplest approach is to use template strings directly:
+The simplest approach needs no loader at all:
 
 ```php
 <?php
 use ByJG\JinjaPhp\Template;
 
-// Directly use a string as a template
 $template = new Template('Hello {{ name }}!');
 $result = $template->render(['name' => 'World']);
 ```
 
-### 2. FileSystemLoader
+### FileSystemLoader
 
-For loading templates from files:
+Loads templates from the files of a directory:
 
 ```php
 <?php
 use ByJG\JinjaPhp\Loader\FileSystemLoader;
-use ByJG\JinjaPhp\Template;
 
 // Create a loader with the templates directory
 $loader = new FileSystemLoader('/path/to/templates');
 
-// Load a specific template
-$templateContent = $loader->getSource('welcome.html');
-$template = new Template($templateContent);
+// Loads /path/to/templates/welcome.jinja
+$template = $loader->getTemplate('welcome');
 $result = $template->render(['name' => 'World']);
+```
+
+`getTemplate()` returns a `Template`, ready to render.
+
+The loader adds the extension to the name when the name does not end with it. The extension is
+`.jinja` unless you pass another one as the second argument:
+
+```php
+<?php
+use ByJG\JinjaPhp\Loader\FileSystemLoader;
+
+$loader = new FileSystemLoader('/path/to/templates', '.html');
+
+$template = $loader->getTemplate('welcome');       // welcome.html
+$template = $loader->getTemplate('welcome.html');  // the same file
+$template = $loader->getTemplate('emails/reset');  // emails/reset.html
+```
+
+A directory that does not exist or cannot be read, and a template file that does not exist, throw
+a `LoaderException`.
+
+### StringLoader
+
+Implements the same interface for a template you already have as a string. It is useful where code
+expects a `LoaderInterface`:
+
+```php
+<?php
+use ByJG\JinjaPhp\Loader\StringLoader;
+
+$loader = new StringLoader();
+$template = $loader->getTemplate('Hello {{ name }}!');
+echo $template->render(['name' => 'World']); // Hello World!
 ```
 
 ## Working with Template Files
@@ -50,15 +78,15 @@ A typical template directory structure might look like:
 ```
 /templates
   /pages
-    home.html
-    about.html
+    home.jinja
+    about.jinja
   /partials
-    header.html
-    footer.html
-    sidebar.html
+    header.jinja
+    footer.jinja
+    sidebar.jinja
   /emails
-    welcome.html
-    password-reset.html
+    welcome.jinja
+    password-reset.jinja
 ```
 
 ### Loading and Rendering Multiple Templates
@@ -68,14 +96,8 @@ Since PHP-Jinja doesn't support template inheritance, you can combine templates 
 ```php
 <?php
 use ByJG\JinjaPhp\Loader\FileSystemLoader;
-use ByJG\JinjaPhp\Template;
 
 $loader = new FileSystemLoader('/path/to/templates');
-
-// Load and render partials
-$headerTemplate = new Template($loader->getSource('partials/header.html'));
-$contentTemplate = new Template($loader->getSource('pages/home.html'));
-$footerTemplate = new Template($loader->getSource('partials/footer.html'));
 
 // Define variables
 $commonVars = [
@@ -84,16 +106,15 @@ $commonVars = [
 ];
 
 // Render each part
-$header = $headerTemplate->render($commonVars + ['page' => 'Home']);
-$content = $contentTemplate->render($commonVars + [
+$header = $loader->getTemplate('partials/header')->render($commonVars + ['page' => 'Home']);
+$content = $loader->getTemplate('pages/home')->render($commonVars + [
     'welcome_message' => 'Welcome to our site!',
     'featured_items' => ['Item 1', 'Item 2', 'Item 3']
 ]);
-$footer = $footerTemplate->render($commonVars);
+$footer = $loader->getTemplate('partials/footer')->render($commonVars);
 
 // Combine the output
-$fullPage = $header . $content . $footer;
-echo $fullPage;
+echo $header . $content . $footer;
 ```
 
 ## Creating a Custom Loader
@@ -102,37 +123,34 @@ You can create custom loaders by implementing the `LoaderInterface`:
 
 ```php
 <?php
+use ByJG\JinjaPhp\Exception\LoaderException;
 use ByJG\JinjaPhp\Loader\LoaderInterface;
 use ByJG\JinjaPhp\Template;
 
 class DatabaseLoader implements LoaderInterface
 {
-    private $db;
-    
-    public function __construct($db)
+    public function __construct(private PDO $db)
     {
-        $this->db = $db;
     }
-    
-    public function getSource(string $name): string
+
+    public function getTemplate(string $template): Template
     {
         // Fetch template from database
         $stmt = $this->db->prepare('SELECT content FROM templates WHERE name = ?');
-        $stmt->execute([$name]);
+        $stmt->execute([$template]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        
+
         if (!$result) {
-            throw new \Exception("Template '$name' not found in database");
+            throw new LoaderException("Template '$template' not found in database");
         }
-        
-        return $result['content'];
+
+        return new Template($result['content']);
     }
 }
 
 // Usage
 $dbLoader = new DatabaseLoader($pdo);
-$templateContent = $dbLoader->getSource('welcome_email');
-$template = new Template($templateContent);
+echo $dbLoader->getTemplate('welcome_email')->render(['name' => 'World']);
 ```
 
 ## Security Considerations
@@ -143,20 +161,14 @@ When loading templates from user input or external sources:
    ```php
    $allowedTemplates = ['home', 'about', 'contact'];
    if (in_array($requestedTemplate, $allowedTemplates)) {
-       $template = $loader->getSource($requestedTemplate . '.html');
+       $template = $loader->getTemplate($requestedTemplate);
    } else {
        throw new \Exception('Invalid template requested');
    }
    ```
 
-2. **Prevent path traversal**: Sanitize file paths
-   ```php
-   // Don't use this directly!
-   $loader->getSource($_GET['template']); // VULNERABLE!
-   
-   // Instead, validate and sanitize
-   $templateName = basename($_GET['template']); // Remove directory paths
-   if (preg_match('/^[a-zA-Z0-9_-]+\.html$/', $templateName)) {
-       $template = $loader->getSource($templateName);
-   }
-   ``` 
+2. **Path traversal**: `FileSystemLoader` only loads files that are inside its directory. A name
+   with `../` that leaves it is refused with a `LoaderException`, the same as a template that does
+   not exist. Any file inside the directory can still be requested, so the whitelist above remains
+   the right way to decide which templates a visitor may see. A custom loader has to do its own
+   check.

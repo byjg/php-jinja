@@ -47,7 +47,8 @@ class Template
      */
     public function __construct(string $template)
     {
-        $this->template = $template;
+        // A comment is dropped before anything else, so what is inside it is never template code
+        $this->template = preg_replace('/\{#.*?#\}/s', '', $template) ?? $template;
         $this->undefined = new StrictUndefined();
     }
 
@@ -581,7 +582,24 @@ class Template
         $regex = '/\{\{(.*)\}\}/U';
         return preg_replace_callback($regex, function ($matches) use ($variables) {
             // if contains any math operation, evaluate it
-            return (string) $this->evaluateVariable($matches[1], $variables);
+            return $this->toOutput($this->evaluateVariable($matches[1], $variables));
         }, $partialTemplate);
+    }
+
+    /**
+     * How a value is written in the output. A plain string cast prints "1" or nothing for a
+     * boolean and cannot print an array at all.
+     */
+    protected function toOutput(mixed $value): string
+    {
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+
+        if (is_array($value)) {
+            return (string)json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+
+        return (string)$value;
     }
 }

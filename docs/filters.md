@@ -26,6 +26,15 @@ Some filters accept arguments:
 {{ variable | filter(arg1, arg2) }}
 ```
 
+Four rules of this implementation:
+
+- Write the pipe with a space on each side: `{{ name | upper }}`, not `{{ name|upper }}`.
+- An argument that contains a comma has to be in single quotes: `join(', ')`, not `join(", ")`.
+  With two arguments, as in `replace`, neither can contain a comma.
+- A filter that does not exist is ignored: the value passes through unchanged.
+- `default` works only as the first filter: `{{ name | default("Guest") | upper }}`. Later in the
+  chain it is ignored, and an undefined variable is handled by the template's undefined handler.
+
 ## Available Filters
 
 PHP-Jinja implements the following filters:
@@ -40,21 +49,21 @@ PHP-Jinja implements the following filters:
 | `length`     | Get string or array length                  | `{{ "hello" \| length }}`                       | `5`                 |
 | `default`    | Default value for undefined variables       | `{{ undefined \| default("Guest") }}`           | `Guest`             |
 | `join`       | Join array elements with a delimiter        | `{{ ["a", "b"] \| join("-") }}`                 | `a-b`               |
-| `split`      | Split a string into an array                | `{{ "a-b" \| split("-") }}`                     | `["a", "b"]`        |
+| `split`      | Split a string into an array                | `{{ "a-b" \| split("-") }}`                     | `["a","b"]`         |
 
 ## Examples
 
 ### String Manipulation
 
 ```jinja
-{{ "hello world" | capitalize | replace("world", "everyone") }}
+{{ "hello world" | capitalize | replace("World", "Everyone") }}
 ```
-Output: `Hello everyone`
+Output: `Hello Everyone`
 
 ### Arrays
 
 ```jinja
-{{ ["apple", "banana", "orange"] | join(", ") | upper }}
+{{ ["apple", "banana", "orange"] | join(', ') | upper }}
 ```
 Output: `APPLE, BANANA, ORANGE`
 
