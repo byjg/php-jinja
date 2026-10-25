@@ -5,7 +5,7 @@ tags: [php, text-manipulation, template]
 
 # Jinja for PHP
 
-Lightweight PHP implementation of the [Jinja2](https://jinja.palletsprojects.com/) template engine originally developed for Python.
+[Jinja2](https://jinja.palletsprojects.com/) templates in pure PHP: the same template renders in your Python and your PHP code.
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%23ea4aaa?logo=githubsponsors&logoColor=white&labelColor=0d1117)](https://github.com/sponsors/byjg)
 [![Build Status](https://github.com/byjg/php-jinja/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/byjg/php-jinja/actions/workflows/phpunit.yml)
@@ -14,6 +14,22 @@ Lightweight PHP implementation of the [Jinja2](https://jinja.palletsprojects.com
 [![GitHub source](https://img.shields.io/badge/Github-source-informational?logo=github)](https://github.com/byjg/php-jinja/)
 [![GitHub license](https://img.shields.io/github/license/byjg/php-jinja.svg)](https://opensource.byjg.com/license/)
 [![GitHub release](https://img.shields.io/github/release/byjg/php-jinja.svg)](https://github.com/byjg/php-jinja/releases/)
+
+## Why
+
+A team that has Python and PHP side by side ends up writing every email, report or
+configuration template twice, in two template languages, and keeping them in sync.
+
+Jinja for PHP reads the Jinja2 syntax, so one template serves both:
+
+```php
+$template = (new FileSystemLoader(__DIR__ . '/templates'))->getTemplate('welcome');
+echo $template->render(['name' => 'World']);
+```
+
+Variables, conditions, loops, filters and expressions work as in Jinja2, with no extension
+or compiled cache to install. Template inheritance, includes and macros are not supported
+yet; see the [comparison with Jinja2](docs/comparison.md).
 
 ## Overview
 
