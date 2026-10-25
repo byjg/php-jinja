@@ -1,5 +1,6 @@
 ---
 sidebar_key: jinja
+sidebar_category: text-content
 tags: [php, text-manipulation, template]
 ---
 
